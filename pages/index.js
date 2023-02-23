@@ -3,11 +3,77 @@ import Image from 'next/image'
 import { Inter } from '@next/font/google'
 import styles from '@/styles/Home.module.css'
 import * as React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import * as d3 from 'd3';
+import { useEffect, useRef, useState, useInterval, Component } from 'react';
+import { Slider, Button } from '@mui/material';
 
 const inter = Inter({ subsets: ['latin'] })
 
+const Circles = () => {
+
+  const [num, setNum] = useState(10);
+  const generateDataset = () => (
+    Array(num).fill(0).map(() => ([
+      (Math.random() * 80 + 10)*10,
+      (Math.random() * 35 + 10)*10,
+    ]))
+  )
+
+  const [dataset, setDataset] = useState(
+    generateDataset()
+  )
+
+  useEffect(() => {
+    setDataset(generateDataset());
+    console.log(num);
+  }, [num])
+  const ref = useRef()
+  useEffect(() => {
+    const svgElement = d3.select(ref.current)
+    const data = svgElement.selectAll("circle")
+      .data(dataset)
+      .join(
+        enter => enter.append("circle")
+          .attr("cx", d => d[0])
+          .attr("cy", d => d[1])
+          .attr("r",  3)
+          .attr('opacity', 1)
+          .attr("fill", "white"),
+        update => update,
+        exit => exit.transition()
+          .duration(2000)
+          .attr('r', 0)
+          .attr('opacity', 0)
+          .remove()
+      );
+    data.transition()
+      .duration(1000)
+      .ease(d3.easeCubic)
+      .attr("cx", d => d[0])
+      .attr("cy", d => d[1])
+      .attr("r",  30)
+      .attr("fill", "white")  
+      .attr("stroke", "blue")
+
+  }, [dataset])
+
+
+  return (
+    <div style={{width:'100%',}}>
+      <svg
+        viewBox="0 0 1000 500"
+        ref={ref}
+      />
+      <Button onClick={() => {setNum(num + 1);}} variant="contained">shuffle da balls</Button>
+      <Button onClick={() => {setNum(10);}} variant="contained">reset da balls</Button>
+      <p>Bones in my bones aeeaeeeaeee ya got these bones in my bones</p>
+    </div>
+  )
+}
 export default function Home() {
+  useEffect(() => {
+  
+  }, []);
   return (
     <>
       <Head>
@@ -17,8 +83,66 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main>
-        <p></p>
+        <Circles />
       </main>
+      <style jsx>{`
+        main {
+          padding: 5rem 0;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+        }
+        #circle {
+          display: inline-block;
+          position: relative;
+          width: 100%;
+          padding-bottom: 100%;
+          vertical-align: top;
+          overflow: hidden;
+      }
+        footer {
+          width: 100%;
+          height: 100px;
+          border-top: 1px solid #eaeaea;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        footer img {
+          margin-left: 0.5rem;
+        }
+        footer a {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          text-decoration: none;
+          color: inherit;
+        }
+        code {
+          background: #fafafa;
+          border-radius: 5px;
+          padding: 0.75rem;
+          font-size: 1.1rem;
+          font-family: Menlo, Monaco, Lucida Console, Liberation Mono,
+            DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace;
+        }
+      `}</style>
+
+      <style jsx global>{`
+        html,
+        body {
+          padding: 0;
+          margin: 0;
+          font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
+            Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue,
+            sans-serif;
+        }
+        * {
+          box-sizing: border-box;
+        }
+      `}</style>
     </>
   )
 }
