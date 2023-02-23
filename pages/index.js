@@ -11,24 +11,64 @@ const inter = Inter({ subsets: ['latin'] })
 
 const Circles = () => {
 
-  const [num, setNum] = useState(10);
-  const generateDataset = () => (
-    Array(num).fill(0).map(() => ([
-      (Math.random() * 80 + 10)*10,
-      (Math.random() * 35 + 10)*10,
-    ]))
-  )
+  const [ageRange, setAgeRange] = useState([0, 99]);
+
+  const chartDimensions = () => {
+    let dimensions = {
+      svgWidth: 1000,
+      svgHeight: 400,
+      margin: {top: 50, left: 60, bottom: 60, right: 150}
+    };
+    dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
+    dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
+    return dimensions;
+  }
+  
+  const dims = chartDimensions();
+
+  const generateDataset = () => {
+    d3.csv("/asst3_yelp.csv")
+    .then((data) => {
+      console.log(data);
+      return data;
+    })
+    .catch((err) => {
+      console.log(err)
+      console.log("csv error");
+      return null;
+    });
+  }
 
   const [dataset, setDataset] = useState(
     generateDataset()
   )
 
+
+
+  const handleChange = (event, newValue) => {
+    if (newValue != ageRange) {
+      setAgeRange(newValue);
+    }
+  };
+
+
+
   useEffect(() => {
-    setDataset(generateDataset());
-    console.log(num);
-  }, [num])
+    /**
+    setDataset(dataset.filter(function (d) {
+      return (d.age >= ageRange[0] && d.age <= ageRange[1])
+    }))
+    */
+  }, [ageRange])
+
+
   const ref = useRef()
+
+  //initial creation, very cool + poggers
   useEffect(() => {
+    const dim = chartDimensions();
+    console.log(dim);
+    /**
     const svgElement = d3.select(ref.current)
     const data = svgElement.selectAll("circle")
       .data(dataset)
@@ -41,7 +81,7 @@ const Circles = () => {
           .attr("fill", "white"),
         update => update,
         exit => exit.transition()
-          .duration(2000)
+          .duration(500)
           .attr('r', 0)
           .attr('opacity', 0)
           .remove()
@@ -54,18 +94,23 @@ const Circles = () => {
       .attr("r",  30)
       .attr("fill", "white")  
       .attr("stroke", "blue")
+    */
 
-  }, [dataset])
+  }, [])
 
 
   return (
-    <div style={{width:'100%',}}>
+    <div style={{width:'90%',}}>
       <svg
-        viewBox="0 0 1000 500"
+        viewBox={`0 0 ${dims.svgWidth} ${dims.svgHeight}`}
         ref={ref}
       />
-      <Button onClick={() => {setNum(num + 1);}} variant="contained">shuffle da balls</Button>
-      <Button onClick={() => {setNum(10);}} variant="contained">reset da balls</Button>
+      <Slider
+        getAriaLabel={() => 'Age range'}
+        value={ageRange}
+        onChange={handleChange}
+        valueLabelDisplay="auto"
+      />
       <p>Bones in my bones aeeaeeeaeee ya got these bones in my bones</p>
     </div>
   )
@@ -74,6 +119,8 @@ export default function Home() {
   useEffect(() => {
   
   }, []);
+
+
   return (
     <>
       <Head>
