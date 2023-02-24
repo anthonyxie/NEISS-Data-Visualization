@@ -17,7 +17,7 @@ const Circles = () => {
     let dimensions = {
       svgWidth: 1000,
       svgHeight: 400,
-      margin: {top: 50, left: 60, bottom: 60, right: 150}
+      margin: {top: 50, left: 60, bottom: 60, right: 60}
     };
     dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
     dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
@@ -26,77 +26,109 @@ const Circles = () => {
   
   const dims = chartDimensions();
 
-  const generateDataset = () => {
-    d3.csv("/asst3_yelp.csv")
-    .then((data) => {
-      console.log(data);
-      return data;
-    })
-    .catch((err) => {
-      console.log(err)
-      console.log("csv error");
-      return null;
+
+  const [dataset, setDataset] = useState(null);
+  const [filtered, setFiltered] = useState(null);
+
+  useEffect(() => {
+    d3.csv('http://localhost:3000/neiss2021ageonly.csv')
+      .then((data) => {
+        console.log(data);
+        setDataset(data);
+        setFiltered(data);
+      })
+      .catch((err) => {
+        console.log(err)
+        console.log("csv error");
+        return null;
     });
-  }
-
-  const [dataset, setDataset] = useState(
-    generateDataset()
-  )
+  }, []);
 
 
+
+  useEffect(() => {
+    console.log("this is the data");
+    console.log(dataset);
+  }, [dataset])
 
   const handleChange = (event, newValue) => {
-    if (newValue != ageRange) {
+    if (newValue[0] !== ageRange[0] || newValue[1] !== ageRange[1]) {
       setAgeRange(newValue);
     }
   };
-
-
+  
+  useEffect(() => {
+    if (dataset) {
+      setFiltered(dataset.filter(function (d) {
+        return (d.Age >= ageRange[0] && d.Age <= ageRange[1])
+      }));
+      console.log(filtered);
+    }
+    console.log("changed agerange");
+    console.log(ageRange);
+  }, [ageRange]);
 
   useEffect(() => {
-    /**
-    setDataset(dataset.filter(function (d) {
-      return (d.age >= ageRange[0] && d.age <= ageRange[1])
-    }))
-    */
-  }, [ageRange])
+    console.log("filter changed");
+    if (filtered) {
+
+
+      const dim = chartDimensions();
+      console.log(dim);
+      
+      const svgElement = d3.select(ref.current);
+      const dataRoll = d3.rollups(filtered, v => v.length,
+        d => {
+          var dat = new Date(d.Treatment_Date);
+          return dat.getMonth();
+        }
+        ).map(([date, count]) => {
+        return {date: date, count: count}
+      });
+      var xScale = d3.scaleBand()
+        .domain(dataRoll.map(d => d.date))
+        .range([0, dim.width])
+        .padding(0.1);
+      
+      var yScale = d3.scaleLinear()
+        .domain([0,32000])
+        .range([dim.height , 0]);
+      
+      //x scale axis
+      svgElement.select("#xAxis")
+      .attr('transform', `translate(${dim.margin.left}, ${dim.height + dim.margin.top})`)
+      .call(d3.axisBottom(xScale));
+      //y scale axis
+      svgElement.select("#yAxis")
+      .attr('transform', `translate(${dim.margin.left}, ${dim.margin.top})`)
+      .call(d3.axisLeft(yScale));
+      
+      console.log(dataRoll);
+      
+      const info = svgElement.select("#circleGroup").selectAll("rect")
+      .data(dataRoll)
+      .join(enter => enter.append("rect")
+        .attr("x", d => xScale(d.date))
+        .attr("y", d => yScale(d.count))
+        .attr("width", xScale.bandwidth())
+        .attr("height", d => dim.height - yScale(d.count))
+        .attr("fill", "black"),
+      update => update,
+      exit => exit.remove()
+      );
+      info.transition()
+      .duration(200)
+      .ease(d3.easeCubic)
+      .attr("x", d => xScale(d.date))
+      .attr("y", d => yScale(d.count))
+      .attr("width", xScale.bandwidth())
+      .attr("height", d => dim.height - yScale(d.count))
+      .attr("fill", "black");
+    }
+  }, [filtered]);
 
 
   const ref = useRef()
-
-  //initial creation, very cool + poggers
-  useEffect(() => {
-    const dim = chartDimensions();
-    console.log(dim);
-    /**
-    const svgElement = d3.select(ref.current)
-    const data = svgElement.selectAll("circle")
-      .data(dataset)
-      .join(
-        enter => enter.append("circle")
-          .attr("cx", d => d[0])
-          .attr("cy", d => d[1])
-          .attr("r",  3)
-          .attr('opacity', 1)
-          .attr("fill", "white"),
-        update => update,
-        exit => exit.transition()
-          .duration(500)
-          .attr('r', 0)
-          .attr('opacity', 0)
-          .remove()
-      );
-    data.transition()
-      .duration(1000)
-      .ease(d3.easeCubic)
-      .attr("cx", d => d[0])
-      .attr("cy", d => d[1])
-      .attr("r",  30)
-      .attr("fill", "white")  
-      .attr("stroke", "blue")
-    */
-
-  }, [])
 
 
   return (
@@ -104,16 +136,21 @@ const Circles = () => {
       <svg
         viewBox={`0 0 ${dims.svgWidth} ${dims.svgHeight}`}
         ref={ref}
-      />
+      >
+        <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+        <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+        <g id="circleGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+      </svg>
       <Slider
         getAriaLabel={() => 'Age range'}
         value={ageRange}
         onChange={handleChange}
         valueLabelDisplay="auto"
+        step={1}
       />
       <p>Bones in my bones aeeaeeeaeee ya got these bones in my bones</p>
     </div>
-  )
+  );
 }
 export default function Home() {
   useEffect(() => {
