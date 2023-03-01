@@ -24,11 +24,13 @@ const Response = () => {
     dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
     return dimensions;
   }
+
+  //average age of injury (x-axis) => estimated counts (radius..?) => separated by theme
   
   const dims = chartDimensions();
 
   useEffect(() => {
-    d3.csv('http://localhost:3000/neissagebody.csv')
+    d3.csv('http://localhost:3000/body_parts.csv')
       .then((data) => {
         console.log(data);
         setDataset(data);
@@ -80,7 +82,7 @@ const AgeBars = () => {
   const [filtered, setFiltered] = useState(null);
 
   useEffect(() => {
-    d3.csv('http://localhost:3000/poggers.csv')
+    d3.csv('http://localhost:3000/body_parts.csv')
       .then((data) => {
         console.log(data);
         setDataset(data);
@@ -126,13 +128,30 @@ const AgeBars = () => {
       console.log(dim);
       
       const svgElement = d3.select(ref.current);
-      const dataRoll = d3.rollups(filtered, v => d3.sum(v, d => d.Weight),
-        d => d.Body_Part
-        ).map(([body_part, count]) => {
-        return {body_part: body_part, count: count}
+      let dataRoll = d3.rollups(filtered, v => d3.sum(v, d => d.Weight),
+        d => d.Body_Part, d => { 
+          if (d.Sex == 0) {
+            return "UNKNOWN";
+          }
+          if (d.Sex == 1) {
+            return "MALE";
+          }
+          if (d.Sex == 2) {
+            return "FEMALE";
+          }
+          if (d.Sex == 3) {
+            return "NON-BINARY/OTHER";
+          }} 
+        ).map(([body_part, sex]) => {
+        return {body_part: body_part, sex: sex, count: d3.sum(sex, d => d[1])}
       }).sort(function(a, b) {
-        return d3.descending(+a.count, +b.count);
-      }).slice(0, 10);
+        return d3.descending(d3.sum(a.sex, d => d[1]), d3.sum(b.sex, d => d[1]));
+      });
+
+      console.log(dataRoll);
+      dataRoll = dataRoll.slice(0,10);
+      console.log(dataRoll);
+
 
 
       var xScale = d3.scaleBand()
@@ -161,7 +180,7 @@ const AgeBars = () => {
       
       console.log(dataRoll);
       
-      const info = svgElement.select("#circleGroup").selectAll("rect")
+      const info = svgElement.select("#rectGroup").selectAll("rect")
       .data(dataRoll, function(d) { return d.body_part; })
       .join(enter => enter.append("rect")
         .attr("x", d => xScale(d.body_part))
@@ -203,7 +222,7 @@ const AgeBars = () => {
       >
         <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-        <g id="circleGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+        <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
       </svg>
       <Slider
         getAriaLabel={() => 'Age range'}
@@ -212,7 +231,7 @@ const AgeBars = () => {
         valueLabelDisplay="auto"
         step={1}
       />
-      <p>Top 10 Body Part Injuries</p>
+      <p>Top 10 Estimated Body Parts Injured -- defined by Age Range</p>
     </div>
   );
 }
