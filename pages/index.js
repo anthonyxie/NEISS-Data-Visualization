@@ -9,9 +9,58 @@ import { Slider, Button } from '@mui/material';
 
 const inter = Inter({ subsets: ['latin'] })
 
-const Circles = () => {
+const Response = () => {
 
-  const [ageRange, setAgeRange] = useState([0, 99]);
+  const [dataset, setDataset] = useState(null);
+  const [filtered, setFiltered] = useState(null);
+
+  const chartDimensions = () => {
+    let dimensions = {
+      svgWidth: 1000,
+      svgHeight: 400,
+      margin: {top: 50, left: 60, bottom: 60, right: 60}
+    };
+    dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
+    dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
+    return dimensions;
+  }
+  
+  const dims = chartDimensions();
+
+  useEffect(() => {
+    d3.csv('http://localhost:3000/neissagebody.csv')
+      .then((data) => {
+        console.log(data);
+        setDataset(data);
+        setFiltered(data);
+      })
+      .catch((err) => {
+        console.log(err)
+        console.log("csv error");
+        return null;
+    });
+  }, []);
+
+
+  const ref = useRef()
+
+
+  return (
+    <div style={{width:'90%',}}>
+      <svg
+        viewBox={`0 0 ${dims.svgWidth} ${dims.svgHeight}`}
+        ref={ref}
+      >
+        
+      </svg>
+      
+    </div>
+  );
+}
+
+const AgeBars = () => {
+
+  const [ageRange, setAgeRange] = useState([0, 100]);
 
   const chartDimensions = () => {
     let dimensions = {
@@ -31,7 +80,7 @@ const Circles = () => {
   const [filtered, setFiltered] = useState(null);
 
   useEffect(() => {
-    d3.csv('http://localhost:3000/neiss2021ageonly.csv')
+    d3.csv('http://localhost:3000/poggers.csv')
       .then((data) => {
         console.log(data);
         setDataset(data);
@@ -77,53 +126,68 @@ const Circles = () => {
       console.log(dim);
       
       const svgElement = d3.select(ref.current);
-      const dataRoll = d3.rollups(filtered, v => v.length,
-        d => {
-          var dat = new Date(d.Treatment_Date);
-          return dat.getMonth();
-        }
-        ).map(([date, count]) => {
-        return {date: date, count: count}
-      });
+      const dataRoll = d3.rollups(filtered, v => d3.sum(v, d => d.Weight),
+        d => d.Body_Part
+        ).map(([body_part, count]) => {
+        return {body_part: body_part, count: count}
+      }).sort(function(a, b) {
+        return d3.descending(+a.count, +b.count);
+      }).slice(0, 10);
+
+
       var xScale = d3.scaleBand()
-        .domain(dataRoll.map(d => d.date))
+        .domain(dataRoll.map(d => d.body_part))
         .range([0, dim.width])
         .padding(0.1);
       
       var yScale = d3.scaleLinear()
-        .domain([0,32000])
+        .domain([0,d3.max(dataRoll, d => d.count)])
         .range([dim.height , 0]);
       
       //x scale axis
       svgElement.select("#xAxis")
       .attr('transform', `translate(${dim.margin.left}, ${dim.height + dim.margin.top})`)
+      .transition()
+      .duration(1000)
+      .ease(d3.easeQuad)
       .call(d3.axisBottom(xScale));
       //y scale axis
       svgElement.select("#yAxis")
       .attr('transform', `translate(${dim.margin.left}, ${dim.margin.top})`)
+      .transition()
+      .duration(1000)
+      .ease(d3.easeQuad)
       .call(d3.axisLeft(yScale));
       
       console.log(dataRoll);
       
       const info = svgElement.select("#circleGroup").selectAll("rect")
-      .data(dataRoll)
+      .data(dataRoll, function(d) { return d.body_part; })
       .join(enter => enter.append("rect")
-        .attr("x", d => xScale(d.date))
+        .attr("x", d => xScale(d.body_part))
         .attr("y", d => yScale(d.count))
         .attr("width", xScale.bandwidth())
         .attr("height", d => dim.height - yScale(d.count))
-        .attr("fill", "black"),
+        .attr("fill", "black")
+        .attr("opacity", 0.75),
       update => update,
-      exit => exit.remove()
+      exit => exit
+        .transition()
+        .duration(1000)
+        .attr("y", yScale(0))
+        .attr("height", 0)
+        .attr("opacity", 0)
+        .remove()
       );
       info.transition()
-      .duration(200)
+      .duration(1000)
       .ease(d3.easeCubic)
-      .attr("x", d => xScale(d.date))
+      .attr("x", d => xScale(d.body_part))
       .attr("y", d => yScale(d.count))
       .attr("width", xScale.bandwidth())
       .attr("height", d => dim.height - yScale(d.count))
-      .attr("fill", "black");
+      .attr("fill", "black")
+      .attr("opacity", 0.75);
     }
   }, [filtered]);
 
@@ -148,10 +212,11 @@ const Circles = () => {
         valueLabelDisplay="auto"
         step={1}
       />
-      <p>Bones in my bones aeeaeeeaeee ya got these bones in my bones</p>
+      <p>Top 10 Body Part Injuries</p>
     </div>
   );
 }
+
 export default function Home() {
   useEffect(() => {
   
@@ -167,7 +232,8 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main>
-        <Circles />
+        <AgeBars />
+        <Response />
       </main>
       <style jsx>{`
         main {
