@@ -142,10 +142,27 @@ const AgeBars = () => {
           if (d.Sex == 3) {
             return "NON-BINARY/OTHER";
           }} 
-        ).map(([body_part, sex]) => {
-        return {body_part: body_part, sex: sex, count: d3.sum(sex, d => d[1])}
+        );
+      console.log(dataRoll);
+      dataRoll = dataRoll.map(([body_part, sex]) => {
+        let u, m, f, n = 0;
+        sex.forEach(s => {
+          if (s[0] == "UNKNOWN") {
+            u = s[1]
+          }
+          else if (s[0] == "MALE") {
+            m = s[1]
+          }
+          else if (s[0] == "FEMALE") {
+            f = s[1]
+          }
+          else if (s[0] == "NON-BINARY/OTHER") {
+            n = s[1]
+          }
+        });
+        return {body_part: body_part, "UNKNOWN": u, "MALE": m, "FEMALE": f, "NON-BINARY/OTHER": n, totalcount: d3.sum(sex, d => d[1])}
       }).sort(function(a, b) {
-        return d3.descending(d3.sum(a.sex, d => d[1]), d3.sum(b.sex, d => d[1]));
+        return d3.descending(a.totalcount, b.totalcount);
       });
 
       console.log(dataRoll);
@@ -160,14 +177,14 @@ const AgeBars = () => {
         .padding(0.1);
       
       var yScale = d3.scaleLinear()
-        .domain([0,d3.max(dataRoll, d => d.count)])
+        .domain([0,d3.max(dataRoll, d => d.totalcount)])
         .range([dim.height , 0]);
       
       //x scale axis
       svgElement.select("#xAxis")
       .attr('transform', `translate(${dim.margin.left}, ${dim.height + dim.margin.top})`)
       .transition()
-      .duration(1000)
+      .duration(300)
       .ease(d3.easeQuad)
       .call(d3.axisBottom(xScale));
       //y scale axis
@@ -179,7 +196,17 @@ const AgeBars = () => {
       .call(d3.axisLeft(yScale));
       
       console.log(dataRoll);
-      
+      const colors = {
+        "UNKNOWN": "black",
+        "MALE": "blue",
+        "FEMALE":"red",
+        "NON-BINARY/OTHER": "yellow"
+      }
+
+      const stacked = d3.stack().keys(["UNKNOWN","MALE","FEMALE","NON-BINARY/OTHER"])(dataRoll);
+      console.log(stacked);
+      /**
+       old way of doing this i honestly think this is lowkey better
       const info = svgElement.select("#rectGroup").selectAll("rect")
       .data(dataRoll, function(d) { return d.body_part; })
       .join(enter => enter.append("rect")
@@ -198,6 +225,7 @@ const AgeBars = () => {
         .attr("opacity", 0)
         .remove()
       );
+    
       info.transition()
       .duration(1000)
       .ease(d3.easeCubic)
@@ -207,6 +235,51 @@ const AgeBars = () => {
       .attr("height", d => dim.height - yScale(d.count))
       .attr("fill", "black")
       .attr("opacity", 0.75);
+      */
+      
+      const info = svgElement.select("#rectGroup").selectAll("g")
+      .data(stacked, function(d) { return d.body_part; })
+      .join(enter => enter.append("g")
+        .style("fill", d => colors[d.key]),
+      update => update,
+      exit => exit.transition()
+      .duration(300)
+      .attr("height", 0)
+      .attr("opacity", 0)
+      .remove()
+      );
+
+      const rectgroup = info.selectAll("rect")
+      .data((d) => d)
+      .join(enter => enter.append("rect")
+        .attr("x", d => xScale(d.data.body_part))
+        .attr("y", d => yScale(d[1]))
+        .attr("width", xScale.bandwidth())
+        .attr("height", d => {return yScale(d[0]) - yScale(d[1]);})
+        .attr("opacity", 0.75),
+        update => update,
+        exit => exit.transition()
+        .duration(300)
+        .attr("y", yScale(0))
+        .attr("height", 0)
+        .attr("opacity", 0)
+        .remove()
+      );
+
+      info.transition()
+      .duration(300)
+      .ease(d3.easeCubic)
+      .attr("opacity", 0.75);
+
+      rectgroup.transition()
+      .duration(300)
+      .ease(d3.easeCubic)
+      .attr("x", d => xScale(d.data.body_part))
+      .attr("y", d => yScale(d[1]))
+      .attr("width", xScale.bandwidth())
+      .attr("height", d => {return yScale(d[0]) - yScale(d[1]);})
+      .attr("opacity", 0.75);
+      
     }
   }, [filtered]);
 
@@ -251,6 +324,8 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main>
+        <h1>Consumer Product-Related Injury Estimates Across the U.S</h1>
+        <p> So like... where are these idiots getting slammed</p>
         <AgeBars />
         <Response />
       </main>
