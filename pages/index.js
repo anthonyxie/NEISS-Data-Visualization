@@ -128,6 +128,7 @@ const AgeBars = () => {
       console.log(dim);
       
       const svgElement = d3.select(ref.current);
+      /**
       let dataRoll = d3.rollups(filtered, v => d3.sum(v, d => d.Weight),
         d => d.Body_Part, d => { 
           if (d.Sex == 0) {
@@ -164,6 +165,14 @@ const AgeBars = () => {
       }).sort(function(a, b) {
         return d3.descending(a.totalcount, b.totalcount);
       });
+      */
+      let dataRoll = d3.rollups(filtered, v => d3.sum(v, d => d.Weight),
+      d => d.Body_Part);
+      dataRoll = dataRoll.map(([body_part, count]) => {
+      return {body_part: body_part, count: count}
+    }).sort(function(a, b) {
+      return d3.descending(+a.count, +b.count);
+    });
 
       console.log(dataRoll);
       dataRoll = dataRoll.slice(0,10);
@@ -177,14 +186,14 @@ const AgeBars = () => {
         .padding(0.1);
       
       var yScale = d3.scaleLinear()
-        .domain([0,d3.max(dataRoll, d => d.totalcount)])
+        .domain([0,d3.max(dataRoll, d => d.count)])
         .range([dim.height , 0]);
       
       //x scale axis
       svgElement.select("#xAxis")
       .attr('transform', `translate(${dim.margin.left}, ${dim.height + dim.margin.top})`)
       .transition()
-      .duration(300)
+      .duration(1000)
       .ease(d3.easeQuad)
       .call(d3.axisBottom(xScale));
       //y scale axis
@@ -196,17 +205,12 @@ const AgeBars = () => {
       .call(d3.axisLeft(yScale));
       
       console.log(dataRoll);
-      const colors = {
-        "UNKNOWN": "black",
-        "MALE": "blue",
-        "FEMALE":"red",
-        "NON-BINARY/OTHER": "yellow"
-      }
 
+      /**
       const stacked = d3.stack().keys(["UNKNOWN","MALE","FEMALE","NON-BINARY/OTHER"])(dataRoll);
       console.log(stacked);
-      /**
-       old way of doing this i honestly think this is lowkey better
+      */
+      //old way of doing this i honestly think this is lowkey better
       const info = svgElement.select("#rectGroup").selectAll("rect")
       .data(dataRoll, function(d) { return d.body_part; })
       .join(enter => enter.append("rect")
@@ -235,8 +239,8 @@ const AgeBars = () => {
       .attr("height", d => dim.height - yScale(d.count))
       .attr("fill", "black")
       .attr("opacity", 0.75);
-      */
-      
+
+      /**
       const info = svgElement.select("#rectGroup").selectAll("g")
       .data(stacked, function(d) { return d.body_part; })
       .join(enter => enter.append("g")
@@ -266,20 +270,15 @@ const AgeBars = () => {
         .remove()
       );
 
-      info.transition()
-      .duration(300)
-      .ease(d3.easeCubic)
-      .attr("opacity", 0.75);
-
       rectgroup.transition()
-      .duration(300)
+      .duration(1000)
       .ease(d3.easeCubic)
       .attr("x", d => xScale(d.data.body_part))
       .attr("y", d => yScale(d[1]))
       .attr("width", xScale.bandwidth())
       .attr("height", d => {return yScale(d[0]) - yScale(d[1]);})
       .attr("opacity", 0.75);
-      
+      */
     }
   }, [filtered]);
 
