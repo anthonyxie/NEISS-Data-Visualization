@@ -6,35 +6,55 @@ import * as React from 'react';
 import * as d3 from 'd3';
 import { useEffect, useRef, useState, useInterval, Component } from 'react';
 import { Slider, Button } from '@mui/material';
+import { Text } from '@visx/text';
 
 const inter = Inter({ subsets: ['latin'] })
 
-const Response = () => {
+
+
+const Products = () => {
 
   const [dataset, setDataset] = useState(null);
   const [filtered, setFiltered] = useState(null);
+  const [productRange, setProductRange] = useState([[1200, 1300],[3200-3300],[5029-5044]]);
+  const [topN, setTopN] = useState(10);
 
   const chartDimensions = () => {
     let dimensions = {
       svgWidth: 1000,
       svgHeight: 400,
-      margin: {top: 50, left: 60, bottom: 60, right: 60}
+      margin: {top: 10, left: 100, bottom: 90, right: 20}
     };
     dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
     dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
     return dimensions;
   }
+  
+  const handleChange = (event, newValue) => {
+    if (newValue !== topN) {
+      setTopN(newValue);
+    }
+  };
 
   //average age of injury (x-axis) => estimated counts (radius..?) => separated by theme
   
   const dims = chartDimensions();
 
   useEffect(() => {
-    d3.csv('http://localhost:3000/body_parts.csv')
+    d3.csv('http://localhost:3000/products11.csv')
       .then((data) => {
         console.log(data);
         setDataset(data);
-        setFiltered(data);
+        let filt = data.filter(function (d) {
+          for (let i = 0; i < productRange.length; i++ ) {
+            if (d.Product_1 >= productRange[i][0] && d.Product_1 <= productRange[i][1]) {
+              return true;
+            }
+          }
+          return false;
+        });
+        
+        setFiltered(filt);
       })
       .catch((err) => {
         console.log(err)
@@ -43,8 +63,147 @@ const Response = () => {
     });
   }, []);
 
+  useEffect(() => {
+    if (dataset) {
+      setFiltered(dataset.filter(function (d) {
+        productRange.forEach( function (c) {
+          return (d.Product_Code >= c[0] && d.Product_Code <= c[1])
+        });
+      }));
+      console.log(filtered);
+    }
+    console.log("changed productrange");
+    console.log(productRange);
+  }, [productRange]);
 
-  const ref = useRef()
+  useEffect(() => {
+    console.log("filter changed");
+    if (filtered) {
+      
+      const dim = chartDimensions();
+      console.log(dim);
+      
+      const svgElement = d3.select(ref.current);
+
+      let dataRoll = d3.rollups(filtered, v => d3.sum(v, d => d.Weight),
+      d => d.Product_Name);
+      dataRoll = dataRoll.map(([product_name, count]) => {
+      return {product_name: product_name, count: count}
+    }).sort(function(a, b) {
+      return d3.descending(+a.count, +b.count);
+    });
+
+
+      console.log(dataRoll);
+      dataRoll = dataRoll.slice(0,topN);
+      console.log(dataRoll);
+
+      var xScale = d3.scaleBand()
+        .domain(dataRoll.map(d => d.product_name))
+        .range([0, dim.width])
+        .padding(0.1);
+      
+      var yScale = d3.scaleLinear()
+        .domain([0,d3.max(dataRoll, d => d.count)])
+        .range([dim.height , 0]);
+      
+      //x scale axis
+      svgElement.select("#xAxis")
+      .attr('transform', `translate(${dim.margin.left}, ${dim.height + dim.margin.top})`)
+      .transition()
+      .duration(1000)
+      .ease(d3.easeQuad)
+      .call(d3.axisBottom(xScale))
+      .selectAll("text")
+      .attr("transform", `translate(${0})rotate(-20)`)
+      .style("text-anchor", "end")
+      .style("font-size", "5")
+
+
+
+
+      //y scale axis
+      svgElement.select("#yAxis")
+      .attr('transform', `translate(${dim.margin.left}, ${dim.margin.top})`)
+      .transition()
+      .duration(1000)
+      .ease(d3.easeQuad)
+      .call(d3.axisLeft(yScale));
+
+      var tooltipGroup = svgElement.select("#tooltipGroup")
+      .style("display", "none") // hidden by default
+      .select("text")
+        .style("white-space", "normal")
+        .attr("x", 5)
+        .attr("y", 15)
+        .attr("font-size", "7px")
+        .attr("font-weight", "bold")
+        .attr("fill", "black")
+        .style("text-anchor", "start");
+      
+      console.log(dataRoll);
+
+      //old way of doing this i honestly think this is lowkey better
+      const info = svgElement.select("#rectGroup").selectAll("rect")
+      .data(dataRoll, function(d) { return d.product_name; })
+      .join(enter => enter.append("rect")
+        .attr("x", d => xScale(d.product_name))
+        .attr("y", d => yScale(d.count))
+        .attr("width", xScale.bandwidth())
+        .attr("height", d => dim.height - yScale(d.count))
+        .attr("fill", "black")
+        .attr("opacity", 0.75)
+        .on("mouseover", function (event, d) {  // <-- need to use the regular function definition to have access to "this"
+          svgElement.select("#tooltip-text")
+            .text(`${d.product_name}`);
+          let positionOffest = 3;
+          svgElement.select("#tooltipGroup")
+            // move the tooltip to where the cursor is
+            .attr("transform", `translate(${dims.margin.left + xScale(d.product_name)}, ${yScale(d.count) + (dim.height - yScale(d.count)) / 2 })`) 
+            .style("display", "block"); // make tooltip visible
+          d3.select(this)
+            .attr("stroke", "#333333")
+            .attr("stroke-width", 2);
+        })
+        .on("mouseout", function (event, d) {
+          svgElement.select("#tooltipGroup").style("display", "none"); // hide tooltip
+          d3.select(this).attr("stroke", "none");  // undo the stroke
+        }),
+      update => update,
+      exit => exit
+        .transition()
+        .duration(1000)
+        .attr("y", dim.height)
+        .attr("height", 0)
+        .attr("opacity", 0)
+        .remove()
+      );
+    
+      info.transition()
+      .duration(1000)
+      .ease(d3.easeCubic)
+      .attr("x", d => xScale(d.product_name))
+      .attr("y", d => yScale(d.count))
+      .attr("width", xScale.bandwidth())
+      .attr("height", d => dim.height - yScale(d.count))
+      .attr("fill", "black")
+      .attr("opacity", 0.75);
+      /**
+      tooltipGroup = svgElement.select("#tooltipGroup")
+      .style("display", "none") // hidden by default
+      .append("text")
+        .attr("id", "tooltip-text")
+        .attr("x", 5)
+        .attr("y", 15)
+        .attr("font-size", "8px")
+        .attr("font-weight", "bold")
+        .attr("fill", "black");
+        */
+
+    }
+  }, [filtered, topN]);
+
+  const ref = useRef();
 
 
   return (
@@ -53,16 +212,28 @@ const Response = () => {
         viewBox={`0 0 ${dims.svgWidth} ${dims.svgHeight}`}
         ref={ref}
       >
+        <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+        <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+        <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+        <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><text id="tooltip-text"></text></g>
         
       </svg>
-      
+      <Slider
+        getAriaLabel={() => 'Show Top:'}
+        value={topN}
+        onChange={handleChange}
+        min={1}
+        max={15}
+        valueLabelDisplay="auto"
+        step={1}
+      />
     </div>
   );
 }
 
 const AgeBars = () => {
 
-  const [ageRange, setAgeRange] = useState([0, 100]);
+  const [ageRange, setAgeRange] = useState([1, 120]);
 
   const chartDimensions = () => {
     let dimensions = {
@@ -169,6 +340,9 @@ const AgeBars = () => {
       let dataRoll = d3.rollups(filtered, v => d3.sum(v, d => d.Weight),
       d => d.Body_Part);
       dataRoll = dataRoll.map(([body_part, count]) => {
+      if (body_part === "25") {
+        body_part = "25-50% OF BODY";
+      }
       return {body_part: body_part, count: count}
     }).sort(function(a, b) {
       return d3.descending(+a.count, +b.count);
@@ -224,7 +398,7 @@ const AgeBars = () => {
       exit => exit
         .transition()
         .duration(1000)
-        .attr("y", yScale(0))
+        .attr("y", dim.height)
         .attr("height", 0)
         .attr("opacity", 0)
         .remove()
@@ -295,15 +469,17 @@ const AgeBars = () => {
         <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+        
       </svg>
       <Slider
         getAriaLabel={() => 'Age range'}
         value={ageRange}
         onChange={handleChange}
+        min={1}
+        max={120}
         valueLabelDisplay="auto"
         step={1}
       />
-      <p>Top 10 Estimated Body Parts Injured -- defined by Age Range</p>
     </div>
   );
 }
@@ -324,13 +500,13 @@ export default function Home() {
       </Head>
       <main>
         <h1>Consumer Product-Related Injury Estimates Across the U.S</h1>
-        <p> So like... where are these idiots getting slammed</p>
+        <p> Where are people getting injured? </p>
         <AgeBars />
-        <Response />
+        <Products />
       </main>
       <style jsx>{`
         main {
-          padding: 5rem 0;
+          padding: 0rem 0;
           flex: 1;
           display: flex;
           flex-direction: column;
@@ -362,6 +538,9 @@ export default function Home() {
           align-items: center;
           text-decoration: none;
           color: inherit;
+        }
+        text {
+          white-space: normal;
         }
         code {
           background: #fafafa;
