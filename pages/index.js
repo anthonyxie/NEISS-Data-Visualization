@@ -9,6 +9,209 @@ import { Slider, Button, Box, FormControl, InputLabel, MenuItem, Select } from '
 
 
 const inter = Inter({ subsets: ['latin'] })
+const ProductsCircles = () => {
+
+  var productTypes = [ "ALL", "HOUSEHOLD APPLIANCES",  "HOME FIXTURES",  "HOME EQUIPMENT AND CONTAINERS",  "SPORTS AND RECREATIONAL ACTIVITY",  "TOYS",  "INDUSTRIAL, MEDICAL, AND CHILD-CARE EQUIPMENT",  "PERSONAL CARE ITEMS",  "OTHER"];
+  var productTypes2 = [ "HOUSEHOLD APPLIANCES",  "HOME FIXTURES",  "HOME EQUIPMENT AND CONTAINERS",  "SPORTS AND RECREATIONAL ACTIVITY",  "TOYS",  "INDUSTRIAL, MEDICAL, AND CHILD-CARE EQUIPMENT",  "PERSONAL CARE ITEMS",  "OTHER"];
+
+  const [dataset, setDataset] = useState(null);
+  const [filtered, setFiltered] = useState(null);
+  const [productRange, setProductRange] = useState(["ALL"]);
+
+  const myColor = d3.scaleOrdinal().domain(productTypes2)
+      .range(d3.schemeSet3);
+
+  const chartDimensions = () => {
+    let dimensions = {
+      svgWidth: 1000,
+      svgHeight: 400,
+      margin: {top: 10, left: 100, bottom: 90, right: 50}
+    };
+    dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
+    dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
+    return dimensions;
+  }
+
+
+  const handleChange2 = (event) => {
+    console.log(event.target.value);
+    setProductRange(event.target.value);
+  };
+
+  //average age of injury (x-axis) => estimated counts (radius..?) => separated by theme
+  
+  const dims = chartDimensions();
+
+  useEffect(() => {
+    d3.csv('http://localhost:3000/products111.csv')
+      .then((data) => {
+        console.log(data);
+        setDataset(data);
+        let filt = data.filter(function (d) {
+          if (productRange.includes("ALL") || productRange == []) {
+            return true;
+          }
+          else {
+            return productRange.includes(d.Category);
+          }
+        });
+        
+        setFiltered(filt);
+      })
+      .catch((err) => {
+        console.log(err)
+        console.log("csv error");
+        return null;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (dataset) {
+      setFiltered(dataset.filter(function (d) {
+        if (productRange.includes("ALL") || productRange == []) {
+          return true;
+        }
+        else {
+          return productRange.includes(d.Category);
+        }
+      }));
+      console.log(filtered);
+    }
+    console.log("changed productrange");
+    console.log(productRange);
+  }, [productRange]);
+
+  useEffect(() => {
+    console.log("filter changed");
+    if (filtered) {
+      
+      const dim = chartDimensions();
+      console.log(dim);
+      
+      const svgElement = d3.select(ref.current);
+
+      let dataRoll = d3.rollups(filtered, v => [d3.sum(v, d => d.Weight), d3.median(v, d => d.Age)],
+      d => d.Product_Name, d => d.Category);
+      console.log("penis");
+      console.log(dataRoll);
+      dataRoll = dataRoll.map(([product_name, cat]) => {
+      return {product_name: product_name, count: cat[0][1][0], age: cat[0][1][1] , category: cat[0][0]}
+      });
+
+    console.log(dataRoll);
+
+      var xScale = d3.scaleLinear()
+        .domain([0, d3.max(dataRoll, d => d.age)])
+        .range([0, dim.width]);
+      
+      var yScale = d3.scaleLinear()
+        .domain([0,d3.max(dataRoll, d => d.count)])
+        .range([dim.height , 0]);
+      
+      
+
+      
+      //x scale axis
+      svgElement.select("#xAxis")
+      .attr('transform', `translate(${dim.margin.left}, ${dim.height + dim.margin.top})`)
+      .transition()
+      .duration(1000)
+      .ease(d3.easeQuad)
+      .call(d3.axisBottom(xScale));
+
+
+
+
+      //y scale axis
+      svgElement.select("#yAxis")
+      .attr('transform', `translate(${dim.margin.left}, ${dim.margin.top})`)
+      .transition()
+      .duration(1000)
+      .ease(d3.easeQuad)
+      .call(d3.axisLeft(yScale));
+
+      
+      console.log(dataRoll);
+
+      //old way of doing this i honestly think this is lowkey better
+      const info = svgElement.select("#rectGroup").selectAll("circle")
+      .data(dataRoll)
+      .join(enter => enter.append("circle")
+        .attr("cx", d => xScale(d.age))
+        .attr("cy", d => yScale(d.count))
+        .attr("r", 5)
+        .attr("fill", d => myColor(d.category))
+        .attr("opacity", 0.75),
+      update => update,
+      exit => exit
+        .transition()
+        .duration(1000)
+        .attr("r", 0)
+        .attr("opacity", 0)
+        .remove()
+      );
+    
+      info.transition()
+      .duration(1000)
+      .ease(d3.easeCubic)
+      .attr("cx", d => xScale(d.age))
+      .attr("cy", d => yScale(d.count))
+      .attr("r", 5)
+      .attr("fill", d => myColor(d.category))
+      .attr("opacity", 0.75);
+      /**
+      tooltipGroup = svgElement.select("#tooltipGroup")
+      .style("display", "none") // hidden by default
+      .append("text")
+        .attr("id", "tooltip-text")
+        .attr("x", 5)
+        .attr("y", 15)
+        .attr("font-size", "8px")
+        .attr("font-weight", "bold")
+        .attr("fill", "black");
+        */
+
+    }
+  }, [filtered]);
+
+  const ref = useRef();
+
+
+  return (
+    <div style={{width:'90%',}}>
+      <svg
+        viewBox={`0 0 ${dims.svgWidth} ${dims.svgHeight}`}
+        ref={ref}
+      >
+        <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+        <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+        <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+        
+      </svg>
+      
+      <Box sx={{ minWidth: 120 }}>
+      <FormControl fullWidth>
+        <InputLabel id="demo-simple-select-label">Product Category</InputLabel>
+        <Select
+          multiple
+          labelId="demo-simple-select-label"
+          id="demo-simple-select"
+          value={productRange}
+          label="Product Category"
+          onChange={handleChange2}
+        >
+          {productTypes.map((value, index) => {
+            return (<MenuItem key = {index} value = {value}>{value}</MenuItem>);
+          })}
+        </Select>
+      </FormControl>
+    </Box>
+    <div style ={{width: '100%', height: '40%'}}>
+      <p>piece of dick and ballllls</p>
+    </div>
+    </div>
+  );
+}
 
 
 
@@ -532,6 +735,7 @@ const AgeBars = () => {
         valueLabelDisplay="auto"
         step={1}
       />
+      <div style={{height: '20%'}}></div>
     </div>
   );
 }
@@ -554,7 +758,8 @@ export default function Home() {
         <h1>Consumer Product-Related Injury Estimates Across the U.S</h1>
         <p> Where are people getting injured? </p>
         <AgeBars />
-        <Products />
+        <Products></Products>
+        <ProductsCircles />
       </main>
       <style jsx>{`
         main {
