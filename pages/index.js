@@ -5,8 +5,8 @@ import styles from '@/styles/Home.module.css'
 import * as React from 'react';
 import * as d3 from 'd3';
 import { useEffect, useRef, useState, useInterval, Component } from 'react';
-import { Slider, Button } from '@mui/material';
-import { Text } from '@visx/text';
+import { Slider, Button, Box, FormControl, InputLabel, MenuItem, Select } from '@mui/material';
+
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -14,16 +14,22 @@ const inter = Inter({ subsets: ['latin'] })
 
 const Products = () => {
 
+  var productTypes = [ "ALL", "HOUSEHOLD APPLIANCES",  "HOME FIXTURES",  "HOME EQUIPMENT AND CONTAINERS",  "SPORTS AND RECREATIONAL ACTIVITY",  "TOYS",  "INDUSTRIAL, MEDICAL, AND CHILD-CARE EQUIPMENT",  "PERSONAL CARE ITEMS",  "OTHER"];
+  var productTypes2 = [ "HOUSEHOLD APPLIANCES",  "HOME FIXTURES",  "HOME EQUIPMENT AND CONTAINERS",  "SPORTS AND RECREATIONAL ACTIVITY",  "TOYS",  "INDUSTRIAL, MEDICAL, AND CHILD-CARE EQUIPMENT",  "PERSONAL CARE ITEMS",  "OTHER"];
+
   const [dataset, setDataset] = useState(null);
   const [filtered, setFiltered] = useState(null);
-  const [productRange, setProductRange] = useState([[1200, 1300],[3200-3300],[5029-5044]]);
+  const [productRange, setProductRange] = useState(["ALL"]);
   const [topN, setTopN] = useState(10);
+
+  const myColor = d3.scaleOrdinal().domain(productTypes2)
+      .range(d3.schemeSet3);
 
   const chartDimensions = () => {
     let dimensions = {
       svgWidth: 1000,
       svgHeight: 400,
-      margin: {top: 10, left: 100, bottom: 90, right: 20}
+      margin: {top: 10, left: 100, bottom: 90, right: 50}
     };
     dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
     dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
@@ -36,22 +42,27 @@ const Products = () => {
     }
   };
 
+  const handleChange2 = (event) => {
+    console.log(event.target.value);
+    setProductRange(event.target.value);
+  };
+
   //average age of injury (x-axis) => estimated counts (radius..?) => separated by theme
   
   const dims = chartDimensions();
 
   useEffect(() => {
-    d3.csv('http://localhost:3000/products11.csv')
+    d3.csv('http://localhost:3000/products111.csv')
       .then((data) => {
         console.log(data);
         setDataset(data);
         let filt = data.filter(function (d) {
-          for (let i = 0; i < productRange.length; i++ ) {
-            if (d.Product_1 >= productRange[i][0] && d.Product_1 <= productRange[i][1]) {
-              return true;
-            }
+          if (productRange.includes("ALL") || productRange == []) {
+            return true;
           }
-          return false;
+          else {
+            return productRange.includes(d.Category);
+          }
         });
         
         setFiltered(filt);
@@ -66,9 +77,12 @@ const Products = () => {
   useEffect(() => {
     if (dataset) {
       setFiltered(dataset.filter(function (d) {
-        productRange.forEach( function (c) {
-          return (d.Product_Code >= c[0] && d.Product_Code <= c[1])
-        });
+        if (productRange.includes("ALL") || productRange == []) {
+          return true;
+        }
+        else {
+          return productRange.includes(d.Category);
+        }
       }));
       console.log(filtered);
     }
@@ -86,9 +100,11 @@ const Products = () => {
       const svgElement = d3.select(ref.current);
 
       let dataRoll = d3.rollups(filtered, v => d3.sum(v, d => d.Weight),
-      d => d.Product_Name);
-      dataRoll = dataRoll.map(([product_name, count]) => {
-      return {product_name: product_name, count: count}
+      d => d.Product_Name, d => d.Category);
+      console.log("penis");
+      console.log(dataRoll);
+      dataRoll = dataRoll.map(([product_name, cat]) => {
+      return {product_name: product_name, count: cat[0][1], category: cat[0][0]}
     }).sort(function(a, b) {
       return d3.descending(+a.count, +b.count);
     });
@@ -106,6 +122,9 @@ const Products = () => {
       var yScale = d3.scaleLinear()
         .domain([0,d3.max(dataRoll, d => d.count)])
         .range([dim.height , 0]);
+      
+      
+
       
       //x scale axis
       svgElement.select("#xAxis")
@@ -132,13 +151,17 @@ const Products = () => {
 
       var tooltipGroup = svgElement.select("#tooltipGroup")
       .style("display", "none") // hidden by default
-      .select("text")
+      .select("#tooltip-text")
         .style("white-space", "normal")
-        .attr("x", 5)
-        .attr("y", 15)
         .attr("font-size", "7px")
         .attr("font-weight", "bold")
         .attr("fill", "black")
+        .style("text-anchor", "start");
+      var tool = svgElement.select("#tooltipGroup").select("#tooltip-text2")
+        .style("white-space", "normal")
+        .attr("font-size", "10px")
+        .attr("font-weight", "bold")
+        .attr("fill", "white")
         .style("text-anchor", "start");
       
       console.log(dataRoll);
@@ -151,16 +174,25 @@ const Products = () => {
         .attr("y", d => yScale(d.count))
         .attr("width", xScale.bandwidth())
         .attr("height", d => dim.height - yScale(d.count))
-        .attr("fill", "black")
+        .attr("fill", d => myColor(d.category))
         .attr("opacity", 0.75)
         .on("mouseover", function (event, d) {  // <-- need to use the regular function definition to have access to "this"
+          /**
           svgElement.select("#tooltip-text")
             .text(`${d.product_name}`);
-          let positionOffest = 3;
+          */
+          svgElement.select("#tooltip-text2")
+            .text(`${Math.round(d.count)}`);
           svgElement.select("#tooltipGroup")
-            // move the tooltip to where the cursor is
-            .attr("transform", `translate(${dims.margin.left + xScale(d.product_name)}, ${yScale(d.count) + (dim.height - yScale(d.count)) / 2 })`) 
-            .style("display", "block"); // make tooltip visible
+            // move the tooltip to where the cursor is 
+            .style("display", "block")
+            .select("#tooltip-text")
+            .attr("x", d3.select(this).attr("x"))
+            .attr("y", d3.select(this).attr("y"));
+          svgElement.select("#tooltipGroup")
+            .select("#tooltip-text2")
+              .attr("x", d3.select(this).attr("x"))
+              .attr("y", d3.select("#tooltip-text").attr("y"));  // make tooltip visible
           d3.select(this)
             .attr("stroke", "#333333")
             .attr("stroke-width", 2);
@@ -186,7 +218,7 @@ const Products = () => {
       .attr("y", d => yScale(d.count))
       .attr("width", xScale.bandwidth())
       .attr("height", d => dim.height - yScale(d.count))
-      .attr("fill", "black")
+      .attr("fill", d => myColor(d.category))
       .attr("opacity", 0.75);
       /**
       tooltipGroup = svgElement.select("#tooltipGroup")
@@ -215,9 +247,11 @@ const Products = () => {
         <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-        <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><text id="tooltip-text"></text></g>
+        <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><text id="tooltip-text"></text><text id="tooltip-text2"></text></g>
         
       </svg>
+      <div></div>
+      <div style={{width:'50%',}}>
       <Slider
         getAriaLabel={() => 'Show Top:'}
         value={topN}
@@ -227,6 +261,24 @@ const Products = () => {
         valueLabelDisplay="auto"
         step={1}
       />
+      </div>
+      <Box sx={{ minWidth: 120 }}>
+      <FormControl fullWidth>
+        <InputLabel id="demo-simple-select-label">Product Category</InputLabel>
+        <Select
+          multiple
+          labelId="demo-simple-select-label"
+          id="demo-simple-select"
+          value={productRange}
+          label="Product Category"
+          onChange={handleChange2}
+        >
+          {productTypes.map((value, index) => {
+            return (<MenuItem key = {index} value = {value}>{value}</MenuItem>);
+          })}
+        </Select>
+      </FormControl>
+    </Box>
     </div>
   );
 }
