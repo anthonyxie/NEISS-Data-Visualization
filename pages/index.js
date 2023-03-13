@@ -6,9 +6,12 @@ import * as React from 'react';
 import * as d3 from 'd3';
 import { useEffect, useRef, useState, useInterval, Component } from 'react';
 import { Slider, Button, Box, FormControl, InputLabel, MenuItem, Select } from '@mui/material';
+import { legendColor } from 'd3-svg-legend';
+import legend from 'd3-svg-legend';
 
 
 const inter = Inter({ subsets: ['latin'] })
+var yScale3;
 const ProductsCircles = () => {
 
   var productTypes = [ "ALL", "HOUSEHOLD APPLIANCES",  "HOME FIXTURES",  "HOME EQUIPMENT AND CONTAINERS",  "SPORTS AND RECREATIONAL ACTIVITY",  "TOYS",  "INDUSTRIAL, MEDICAL, AND CHILD-CARE EQUIPMENT",  "PERSONAL CARE ITEMS",  "OTHER"];
@@ -20,6 +23,16 @@ const ProductsCircles = () => {
 
   const myColor = d3.scaleOrdinal().domain(productTypes2)
       .range(d3.schemeSet3);
+  
+  var colorLegend = legendColor()
+      .labelFormat(d3.format(".2f"))
+      .title("Product Categories")
+      .titleWidth(175)
+      .labelWrap(175)
+      .scale(myColor);
+  
+
+  
 
   const chartDimensions = () => {
     let dimensions = {
@@ -89,10 +102,10 @@ const ProductsCircles = () => {
       console.log(dim);
       
       const svgElement = d3.select(ref.current);
+      
 
       let dataRoll = d3.rollups(filtered, v => [d3.sum(v, d => d.Weight), d3.median(v, d => d.Age)],
       d => d.Product_Name, d => d.Category);
-      console.log("penis");
       console.log(dataRoll);
       dataRoll = dataRoll.map(([product_name, cat]) => {
       return {product_name: product_name, count: cat[0][1][0], age: cat[0][1][1] , category: cat[0][0]}
@@ -104,8 +117,8 @@ const ProductsCircles = () => {
         .domain([0, d3.max(dataRoll, d => d.age)])
         .range([0, dim.width]);
       
-      var yScale = d3.scaleLinear()
-        .domain([0,d3.max(dataRoll, d => d.count)])
+      yScale3 = d3.scaleLog()
+        .domain([1,d3.max(dataRoll, d => d.count)])
         .range([dim.height , 0]);
       
       
@@ -121,6 +134,7 @@ const ProductsCircles = () => {
 
 
 
+      //svgElement.select("#legend").call(colorLegend);
 
       //y scale axis
       svgElement.select("#yAxis")
@@ -128,14 +142,14 @@ const ProductsCircles = () => {
       .transition()
       .duration(1000)
       .ease(d3.easeQuad)
-      .call(d3.axisLeft(yScale));
+      .call(d3.axisLeft(yScale3));
 
       var tooltipGroup = svgElement.select("#tooltipGroup")
       .style("display", "none") // hidden by default
       .append("text")
         .attr("id", "tooltip-text")
-        .attr("x", 3)
-        .attr("y", 5)
+        .attr("x", 10)
+        .attr("y", 10)
         .attr("font-size", "4px")
         .attr("font-weight", "bold")
         .attr("fill", "black");
@@ -147,25 +161,18 @@ const ProductsCircles = () => {
       const info = svgElement.select("#rectGroup").selectAll("circle")
       .data(dataRoll)
       .join(enter => enter.append("circle")
+        .transition()
+        .duration(1000)
         .attr("cx", d => xScale(d.age))
-        .attr("cy", d => yScale(d.count))
+        .attr("cy", d => yScale3(d.count))
         .attr("r", 5)
         .attr("fill", d => myColor(d.category))
-        .attr("opacity", 0.75)
-        .on("mouseover", function (event, d) {  // <-- need to use the regular function definition to have access to "this"
-          svgElement.select("#tooltip-text")
-            .text(`${d.product_name}`);
-          svgElement.select("#tooltipGroup")
-            // move the tooltip to where the cursor is 
-            .style("display", "block")
-            .attr("transform", `translate(${dims.margin.left + xScale(d.age)}, ${dims.margin.top + yScale(d.count)})`)
-          d3.select(this)
-            .attr("stroke", "#333333")
-            .attr("stroke-width", 2);
-        })
-        .on("mouseout", function (event, d) {
-          svgElement.select("#tooltipGroup").style("display", "none"); // hide tooltip
-          d3.select(this).attr("stroke", "none");  // undo the stroke
+        .attr("opacity", 1)
+        .attr("class", "circleClass")
+        .call(function (d) {
+          console.log(yScale3(d3.max(dataRoll, d => d.count)));
+          console.log(d3.max(dataRoll, d => d.count));
+          console.log(dim.height);
         }),
       update => update,
       exit => exit
@@ -176,14 +183,31 @@ const ProductsCircles = () => {
         .remove()
       );
     
+      d3.selectAll(".circleClass")
+        .on("mouseover", function (event, d) {  // <-- need to use the regular function definition to have access to "this"
+          svgElement.select("#tooltip-text")
+            .text(`${d.product_name}`);
+          svgElement.select("#tooltipGroup")
+            // move the tooltip to where the cursor is 
+            .style("display", "block")
+            .attr("transform", `translate(${dims.margin.left + xScale(d.age) + 10}, ${dims.margin.top + yScale3(d.count) - 10})`)
+          d3.select(this)
+            .attr("stroke", "#333333")
+            .attr("stroke-width", 2);
+        })
+        .on("mouseout", function (event, d) {
+          svgElement.select("#tooltipGroup").style("display", "none"); // hide tooltip
+          d3.select(this).attr("stroke", "none");  // undo the stroke
+        });
+      
       info.transition()
       .duration(1000)
       .ease(d3.easeCubic)
       .attr("cx", d => xScale(d.age))
-      .attr("cy", d => yScale(d.count))
+      .attr("cy", d => yScale3(d.count))
       .attr("r", 5)
       .attr("fill", d => myColor(d.category))
-      .attr("opacity", 0.75);
+      .attr("opacity", 1);
 
 
 
@@ -205,6 +229,7 @@ const ProductsCircles = () => {
           <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><text id="tooltip-text" fontSize={8}></text></g>
+          <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right - 300}, ${dims.margin.top + 75})`}></g>
         </svg>
       </div>
       
@@ -306,10 +331,7 @@ const Products = () => {
           return productRange.includes(d.Category);
         }
       }));
-      console.log(filtered);
     }
-    console.log("changed productrange");
-    console.log(productRange);
   }, [productRange]);
 
   useEffect(() => {
@@ -323,8 +345,6 @@ const Products = () => {
 
       let dataRoll = d3.rollups(filtered, v => d3.sum(v, d => d.Weight),
       d => d.Product_Name, d => d.Category);
-      console.log("penis");
-      console.log(dataRoll);
       dataRoll = dataRoll.map(([product_name, cat]) => {
       return {product_name: product_name, count: cat[0][1], category: cat[0][0]}
     }).sort(function(a, b) {
@@ -332,9 +352,7 @@ const Products = () => {
     });
 
 
-      console.log(dataRoll);
       dataRoll = dataRoll.slice(0,topN);
-      console.log(dataRoll);
 
       var xScale = d3.scaleBand()
         .domain(dataRoll.map(d => d.product_name))
@@ -468,6 +486,7 @@ const Products = () => {
       >
         <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+        <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right - 100}, ${dims.margin.top + 75})`}></g>
         <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><text id="tooltip-text"></text><text id="tooltip-text2"></text></g>
         
@@ -484,6 +503,7 @@ const Products = () => {
         step={1}
       />
       </div>
+      <div  style={{width:'50%',}}>
       <Box sx={{ minWidth: 120 }}>
       <FormControl fullWidth>
         <InputLabel id="demo-simple-select-label">Product Category</InputLabel>
@@ -501,6 +521,7 @@ const Products = () => {
         </Select>
       </FormControl>
     </Box>
+    </div>
     </div>
   );
 }
@@ -622,9 +643,7 @@ const AgeBars = () => {
       return d3.descending(+a.count, +b.count);
     });
 
-      console.log(dataRoll);
       dataRoll = dataRoll.slice(0,10);
-      console.log(dataRoll);
 
 
 
