@@ -25,7 +25,7 @@ const ProductsCircles = () => {
     let dimensions = {
       svgWidth: 1000,
       svgHeight: 400,
-      margin: {top: 10, left: 100, bottom: 90, right: 50}
+      margin: {top: 40, left: 100, bottom: 30, right: 50}
     };
     dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
     dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
@@ -130,6 +130,16 @@ const ProductsCircles = () => {
       .ease(d3.easeQuad)
       .call(d3.axisLeft(yScale));
 
+      var tooltipGroup = svgElement.select("#tooltipGroup")
+      .style("display", "none") // hidden by default
+      .append("text")
+        .attr("id", "tooltip-text")
+        .attr("x", 3)
+        .attr("y", 5)
+        .attr("font-size", "4px")
+        .attr("font-weight", "bold")
+        .attr("fill", "black");
+
       
       console.log(dataRoll);
 
@@ -141,7 +151,22 @@ const ProductsCircles = () => {
         .attr("cy", d => yScale(d.count))
         .attr("r", 5)
         .attr("fill", d => myColor(d.category))
-        .attr("opacity", 0.75),
+        .attr("opacity", 0.75)
+        .on("mouseover", function (event, d) {  // <-- need to use the regular function definition to have access to "this"
+          svgElement.select("#tooltip-text")
+            .text(`${d.product_name}`);
+          svgElement.select("#tooltipGroup")
+            // move the tooltip to where the cursor is 
+            .style("display", "block")
+            .attr("transform", `translate(${dims.margin.left + xScale(d.age)}, ${dims.margin.top + yScale(d.count)})`)
+          d3.select(this)
+            .attr("stroke", "#333333")
+            .attr("stroke-width", 2);
+        })
+        .on("mouseout", function (event, d) {
+          svgElement.select("#tooltipGroup").style("display", "none"); // hide tooltip
+          d3.select(this).attr("stroke", "none");  // undo the stroke
+        }),
       update => update,
       exit => exit
         .transition()
@@ -159,17 +184,8 @@ const ProductsCircles = () => {
       .attr("r", 5)
       .attr("fill", d => myColor(d.category))
       .attr("opacity", 0.75);
-      /**
-      tooltipGroup = svgElement.select("#tooltipGroup")
-      .style("display", "none") // hidden by default
-      .append("text")
-        .attr("id", "tooltip-text")
-        .attr("x", 5)
-        .attr("y", 15)
-        .attr("font-size", "8px")
-        .attr("font-weight", "bold")
-        .attr("fill", "black");
-        */
+
+
 
     }
   }, [filtered]);
@@ -178,18 +194,21 @@ const ProductsCircles = () => {
 
 
   return (
-    <div style={{width:'90%',}}>
-      <svg
-        viewBox={`0 0 ${dims.svgWidth} ${dims.svgHeight}`}
-        ref={ref}
-      >
-        <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-        <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-        <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-        
-      </svg>
+    <div style={{width:'100%'}}>
+    <div style={{width:'100%',display: 'flex', flexDirection: 'row'}}>
+      <div style={{width:'80%',}}>
+        <svg
+          viewBox={`0 0 ${dims.svgWidth} ${dims.svgHeight}`}
+          ref={ref}
+        >
+          <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+          <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+          <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+          <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><text id="tooltip-text" fontSize={8}></text></g>
+        </svg>
+      </div>
       
-      <Box sx={{ minWidth: 120 }}>
+      <Box sx={{ width: '20%'}}>
       <FormControl fullWidth>
         <InputLabel id="demo-simple-select-label">Product Category</InputLabel>
         <Select
@@ -206,10 +225,10 @@ const ProductsCircles = () => {
         </Select>
       </FormControl>
     </Box>
-    <div style ={{width: '100%', height: '40%'}}>
-      <p>piece of dick and ballllls</p>
     </div>
+
     </div>
+    
   );
 }
 
