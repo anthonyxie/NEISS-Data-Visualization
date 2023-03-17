@@ -152,8 +152,7 @@ const TimeBars = () => {
                 .text(`${d3.select(this.parentNode).attr("class")}: ${d[1] - d[0]} `)
                 .attr("x", 0)
                 .attr("y", 0);
-              let bbox = svgElement.select("#tooltipGroup")
-                .select("text").node().getBoundingClientRect();
+              let bbox = svgElement.select("#tooltipGroup").node().getBoundingClientRect();
               svgElement.select("#backing")
                 .attr("x", 0)
                 .attr("y", -1 * bbox.height)
@@ -395,7 +394,7 @@ const ProductsCircles = () => {
           svgElement.select("#tooltip-text")
             .text(`${d.product_name}`);
           let bbox = svgElement.select("#tooltipGroup")
-            .select("text").svgElement().getBoundingClientRect
+            .select("text").node().getBoundingClientRect
           svgElement.select("#backing")
             .attr("x", 0)
             .attr("y", 0)
