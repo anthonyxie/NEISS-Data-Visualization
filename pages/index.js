@@ -149,7 +149,18 @@ const TimeBars = () => {
             .attr("cy", d => yScale(d[1]))
             .on("mouseover", function (event, d) {  // <-- need to use the regular function definition to have access to "this"
               svgElement.select("#tooltip-text")
-                .text(`${d3.select(this.parentNode).attr("class")}: ${d[1] - d[0]} `);
+                .text(`${d3.select(this.parentNode).attr("class")}: ${d[1] - d[0]} `)
+                .attr("x", 0)
+                .attr("y", 0);
+              let bbox = svgElement.select("#tooltipGroup")
+                .select("text").node().getBoundingClientRect();
+              svgElement.select("#backing")
+                .attr("x", 0)
+                .attr("y", -1 * bbox.height)
+                .attr("width", bbox.width)
+                .attr("height", bbox.height)
+                .style("display", "block")
+                .attr("transform", `translate(${dims.margin.left + xScale(d.data.year) + 1}, ${dims.margin.top + yScale(d[1]) - 10})`)
               svgElement.select("#tooltipGroup")
                 // move the tooltip to where the cursor is 
                 .style("display", "block")
@@ -159,6 +170,7 @@ const TimeBars = () => {
                 .attr("stroke-width", 3);
             })
             .on("mouseout", function (event, d) {
+              svgElement.select("#backing").style("display", "none");
               svgElement.select("#tooltipGroup").style("display", "none"); // hide tooltip
               d3.select(this).attr("stroke-width", "1");  // undo the stroke
             })
@@ -185,6 +197,7 @@ const TimeBars = () => {
         <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="areaGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="circleGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+        <rect fill="white" id="backing"></rect>
         <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><text id="tooltip-text" fontSize={10} fontWeight="bold"></text></g>
         
       </svg>
@@ -382,13 +395,13 @@ const ProductsCircles = () => {
           svgElement.select("#tooltip-text")
             .text(`${d.product_name}`);
           let bbox = svgElement.select("#tooltipGroup")
-            .select("text").node().getBoundingClientRect();
-          svgElement.select("#tooltipGroup")
-            .select("rect")
+            .select("text").svgElement().getBoundingClientRect
+          svgElement.select("#backing")
             .attr("x", 0)
             .attr("y", 0)
             .attr("width", bbox.width)
             .attr("height", bbox.height)
+            .attr("transform", `translate(${dims.margin.left + xScale(d.age) + 3}, ${dims.margin.top + yScale3(d.count) - 10})`);
           svgElement.select("#tooltipGroup")
             // move the tooltip to where the cursor is 
             .style("display", "block")
@@ -430,7 +443,8 @@ const ProductsCircles = () => {
           <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-          <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><rect fill="white"></rect><text id="tooltip-text" fontSize={8}></text></g>
+          <rect fill="white" id="backing"></rect>
+          <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><text id="tooltip-text" fontSize={8}></text></g>
           <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right - 300}, ${dims.margin.top + 75})`}></g>
         </svg>
       </div>
