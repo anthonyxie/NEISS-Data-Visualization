@@ -1017,9 +1017,12 @@ export default function Home() {
             <p> NEISS stores the previous years worth of injury reports, so we can investigate changing trends. Have consumer product injuries changed at all since 2010? In the chart below, we can view the total estimated injury counts for each year, separated into categories of consumer products. You can also view the percentage breakdown for each category by clicking the checkbox. We can see that overall, the estimated injuries  </p>
           </div>
         <TimeBars></TimeBars>
+        
         <p> Where are people getting injured? </p>
+        <AgeBars/>
         <p> Joe mama </p>
         <ProductsCircles />
+        <Products/>
         </div>
       </main>
       <style jsx>{`
