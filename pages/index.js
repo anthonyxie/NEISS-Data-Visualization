@@ -26,7 +26,7 @@ const TimeBars = () => {
     let dimensions = {
       svgWidth: 1000,
       svgHeight: 500,
-      margin: {top: 50, left: 100, bottom: 60, right: 150}
+      margin: {top: 50, left: 100, bottom: 60, right: 250}
     };
     dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
     dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
@@ -135,12 +135,22 @@ const TimeBars = () => {
       
 
 
+
       const stacked = d3.stack().keys(keys)(dataRoll);
       console.log("stacked is:");
       console.log(stacked);
 
       myColor = d3.scaleOrdinal().domain(keys)
       .range(d3.schemeSet3);
+
+      var colorLegend = legendColor()
+      .labelFormat(d3.format(".2f"))
+      .title("Product Categories")
+      .titleWidth(175)
+      .labelWrap(175)
+      .scale(myColor);
+
+      svgElement.select("#legend").call(colorLegend);
 
       const info = svgElement.select("#areaGroup")
         .selectAll("path")
@@ -160,7 +170,13 @@ const TimeBars = () => {
             .y1(function(d) { return yScale(d[1]); })),
           exit => exit.remove(),
         );
-      
+    
+        if (!showPercents) {
+          d3.select("#yAxisLabel").text("Total Estimated Injury Count");
+        }
+        else {
+          d3.select("#yAxisLabel").text("% of Total Estimated Injuries");
+        }
       
         d3.select("#circleGroup").selectAll("g").remove();
         const info2 = svgElement.select("#circleGroup")
@@ -232,9 +248,11 @@ const TimeBars = () => {
 
   return (
     <div style={{width:'90%',}}>
-      <FormGroup>
+      <div>
+      <FormGroup style={{width:'50%',}}>
         <FormControlLabel control={<Checkbox onChange={handleChange}  checked={showPercents} />} label="Show Percentages" />
       </FormGroup>
+      </div>
       <svg
         viewBox={`0 0 ${dims.svgWidth} ${dims.svgHeight}`}
         ref={ref}
@@ -244,6 +262,9 @@ const TimeBars = () => {
         <g id="areaGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="circleGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><rect rx="5" fill="white" style={{stroke: 'black'}} ref={rectRef} ></rect><text id="tooltip-text" fontSize={8} fontWeight="bold" ref={textRef} ></text></g>
+        <text id="yAxisLabel"x={-(dims.margin.top + dims.height / 2)} y={30} transform={`rotate(${-90})`} textAnchor="middle" fontSize={15} >Population</text>
+        <text x={dims.svgWidth / 2} y={dims.svgHeight - 20} textAnchor="middle" fontSize={15} >Year</text>
+        <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right + 50}, ${dims.margin.top + 75})`}></g>
         
       </svg>
       <div style={{height: '20%'}}></div>
@@ -388,8 +409,6 @@ const ProductsCircles = () => {
         .attr("font-weight", "bold")
         .attr("fill", "black");
 
-      
-      console.log(dataRoll);
 
       //old way of doing this i honestly think this is lowkey better
       const info = svgElement.select("#rectGroup").selectAll("circle")
@@ -484,7 +503,7 @@ const ProductsCircles = () => {
 
 
   return (
-    <div style={{width:'100%'}}>
+    <div style={{width:'90%'}}>
     <div style={{width:'100%',display: 'flex', flexDirection: 'row'}}>
       <div style={{width:'80%',}}>
         <svg
@@ -499,7 +518,7 @@ const ProductsCircles = () => {
         </svg>
       </div>
       
-      <Box sx={{ width: '20%'}}>
+      <Box sx={{ width: '10%'}}>
       <FormControl fullWidth>
         <InputLabel id="demo-simple-select-label">Product Category</InputLabel>
         <Select
@@ -516,7 +535,7 @@ const ProductsCircles = () => {
         </Select>
       </FormControl>
       </Box>
-      <Box sx={{ width: '20%'}}>
+      <Box sx={{ width: '10%'}}>
       <FormControl fullWidth>
         <InputLabel id="demo-simple-select-label">Year</InputLabel>
         <Select
@@ -742,17 +761,7 @@ const Products = () => {
       .attr("height", d => dim.height - yScale(d.count))
       .attr("fill", d => myColor(d.category))
       .attr("opacity", 0.75);
-      /**
-      tooltipGroup = svgElement.select("#tooltipGroup")
-      .style("display", "none") // hidden by default
-      .append("text")
-        .attr("id", "tooltip-text")
-        .attr("x", 5)
-        .attr("y", 15)
-        .attr("font-size", "8px")
-        .attr("font-weight", "bold")
-        .attr("fill", "black");
-        */
+
 
     }
   }, [filtered, topN]);
@@ -1009,7 +1018,6 @@ export default function Home() {
           </div>
         <TimeBars></TimeBars>
         <p> Where are people getting injured? </p>
-        <AgeBars />
         <p> Joe mama </p>
         <ProductsCircles />
         </div>
