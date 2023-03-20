@@ -1012,17 +1012,22 @@ export default function Home() {
       <main>
         <div style={{width: '90%', flexDirection: 'column', alignItems: 'center', display: "flex"}}>
           <div style={{width: '80%', display: "flex", alignItems: "center", flexDirection: 'column',}}>
-            <h1>Analyzing Consumer Product-Related Injuries in the U.S</h1>
+            <h1>Consumer Product-Related Injuries in the U.S</h1>
             
-            <p> NEISS stores the previous years worth of injury reports, so we can investigate changing trends. Have consumer product injuries changed at all since 2010? In the chart below, we can view the total estimated injury counts for each year, separated into categories of consumer products. You can also view the percentage breakdown for each category by clicking the checkbox. We can see that overall, the estimated injuries  </p>
+            <h2>Injuries by Product Type</h2>
+            <p> Using annual NEISS reports, we investigate how consumer product injuries have changed since 2010. <br></br><br></br>The chart below shows the estimated injury counts for each year, categorized by type of consumer product. You can view the percentage breakdown for each category by clicking the checkbox. <br></br><br></br>Overall, product injuries remained steady year-over-year until experiencing a significant decline in 2019, especially in sports and recreation products, then began to return to previous levels in 2020.</p>
           </div>
         <TimeBars></TimeBars>
+        <br></br><br></br><br></br><br></br>
         
-        <p> Where are people getting injured? </p>
-        <AgeBars/>
-        <p> Joe mama </p>
+        <h2>Injuries by Age and Body Location</h2>
+        <AgeBars />
+        <p> Age </p>
+        <br></br><br></br><br></br><br></br>
+        
+        <h2>Injuries by Age and Product Type</h2>
         <ProductsCircles />
-        <Products/>
+        <br></br><br></br><br></br><br></br>
         </div>
       </main>
       <style jsx>{`
