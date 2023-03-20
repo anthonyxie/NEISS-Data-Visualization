@@ -124,7 +124,8 @@ const TimeBars = () => {
       .transition()
       .duration(200)
       .ease(d3.easeQuad)
-      .call(d3.axisBottom(xScale));
+      .call(d3.axisBottom(xScale).tickFormat(d3.format("d")));
+
       //y scale axis
       svgElement.select("#yAxis")
       .attr('transform', `translate(${dim.margin.left}, ${dim.margin.top})`)
