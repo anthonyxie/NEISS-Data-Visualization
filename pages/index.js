@@ -5,23 +5,28 @@ import styles from '@/styles/Home.module.css'
 import * as React from 'react';
 import * as d3 from 'd3';
 import { useEffect, useRef, useState, useInterval, Component } from 'react';
-import { Slider, Button, Box, FormControl, InputLabel, MenuItem, Select } from '@mui/material';
+import { Slider, Button, Box, FormControl, InputLabel, MenuItem, Select, FormGroup, FormControlLabel, Checkbox } from '@mui/material';
 import { legendColor } from 'd3-svg-legend';
 import legend from 'd3-svg-legend';
 
 
 const inter = Inter({ subsets: ['latin'] })
 var yScale3;
+var myColor;
+
 
 const TimeBars = () => {
 
   const [ageRange, setAgeRange] = useState([1, 120]);
+  const [showPercents, setShowPercents] = useState(false);
+  const textRef = useRef(null);
+  const rectRef = useRef(null);
 
   const chartDimensions = () => {
     let dimensions = {
       svgWidth: 1000,
       svgHeight: 500,
-      margin: {top: 50, left: 60, bottom: 60, right: 150}
+      margin: {top: 50, left: 100, bottom: 60, right: 150}
     };
     dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
     dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
@@ -48,6 +53,10 @@ const TimeBars = () => {
     });
   }, []);
 
+  const handleChange = (event) => {
+    setShowPercents(event.target.checked);
+  }
+
 
 
   useEffect(() => {
@@ -73,39 +82,54 @@ const TimeBars = () => {
       dataRoll = dataRoll.map(([year, categories]) => {
         //let obj = {year: year, totalcount: 0};
         let obj = {year: year};
+        let sum = 0;
         for (let i = 0; i < 8; i++) {
           if (keys.length < 8) {
             keys.push(categories[i][0]);
           }
           obj[categories[i][0]] = categories[i][1];
-          //obj["totalcount"] += categories[i][1];
+          sum += categories[i][1];
+        }
+        if (showPercents) {
+          for (let i = 0; i < 8; i++) {
+            obj[categories[i][0]] = (obj[categories[i][0]] / sum) * 100 ;
+          }
         }
         return obj;
       }).sort(function(a,b) {
         return d3.ascending(a.year, b.year);
       });
-
+      console.log(keys);
 
       var xScale = d3.scaleLinear()
         .domain(d3.extent(dataRoll, function(d) {return d.year;}))
         .range([0, dim.width]);
       
-      var yScale = d3.scaleLinear()
+      var yScale;
+      if (!showPercents) {
+        yScale = d3.scaleLinear()
         .domain([-10000, 16000000])
         .range([dim.height , 0]);
+      }
+      else {
+        yScale = d3.scaleLinear()
+        .domain([0, 100])
+        .range([dim.height , 0]);
+      }
+
       
       //x scale axis
       svgElement.select("#xAxis")
       .attr('transform', `translate(${dim.margin.left}, ${dim.height + dim.margin.top})`)
       .transition()
-      .duration(1000)
+      .duration(200)
       .ease(d3.easeQuad)
       .call(d3.axisBottom(xScale));
       //y scale axis
       svgElement.select("#yAxis")
       .attr('transform', `translate(${dim.margin.left}, ${dim.margin.top})`)
       .transition()
-      .duration(1000)
+      .duration(200)
       .ease(d3.easeQuad)
       .call(d3.axisLeft(yScale));
       
@@ -115,11 +139,11 @@ const TimeBars = () => {
       console.log("stacked is:");
       console.log(stacked);
 
-      const myColor = d3.scaleOrdinal().domain(keys)
+      myColor = d3.scaleOrdinal().domain(keys)
       .range(d3.schemeSet3);
 
       const info = svgElement.select("#areaGroup")
-        .selectAll("mylayers")
+        .selectAll("path")
         .data(stacked)
         .join(enter => enter
           .append("path")
@@ -129,9 +153,16 @@ const TimeBars = () => {
               .y0(function(d) { return yScale(d[0]); })
               .y1(function(d) { return yScale(d[1]); }))  
           ,
-            update => update,
-            exit => exit,
+          update => update
+            .attr("d", d3.area()
+            .x(function(d, i) { return xScale(d.data.year); })
+            .y0(function(d) { return yScale(d[0]); })
+            .y1(function(d) { return yScale(d[1]); })),
+          exit => exit.remove(),
         );
+      
+      
+        d3.select("#circleGroup").selectAll("g").remove();
         const info2 = svgElement.select("#circleGroup")
         .selectAll("g")
         .data(stacked)
@@ -141,25 +172,32 @@ const TimeBars = () => {
           .attr("class", d => d.key)
           .attr("fill", function(d) { return myColor(d.key); })
           .selectAll("circle")
-          .data(function (d) { console.log(d); return d; })
-          .enter().append("circle")
+          .data(function (d) { return d; })
+          .join(enter => enter.append("circle")
             .attr("r", 5)
             .attr("stroke", "black")
             .attr("cx", function(d) { return xScale(d.data.year); })
             .attr("cy", d => yScale(d[1]))
             .on("mouseover", function (event, d) {  // <-- need to use the regular function definition to have access to "this"
-              svgElement.select("#tooltip-text")
-                .text(`${d3.select(this.parentNode).attr("class")}: ${d[1] - d[0]} `)
-                .attr("x", 0)
+              if (!showPercents) {
+                svgElement.select("#tooltip-text")
+                  .text(`${d3.select(this.parentNode).attr("class")}: ${d[1] - d[0]} `)
+                  .attr("x", -50)
+                  .attr("y", 0);
+              }
+              else {
+                svgElement.select("#tooltip-text")
+                .text(`${d3.select(this.parentNode).attr("class")}: ${Math.round((d[1] - d[0]) * 100) / 100}\% `)
+                .attr("x", -50)
                 .attr("y", 0);
-              let bbox = svgElement.select("#tooltipGroup").node().getBoundingClientRect();
-              svgElement.select("#backing")
-                .attr("x", 0)
-                .attr("y", -1 * bbox.height)
-                .attr("width", bbox.width)
-                .attr("height", bbox.height)
-                .style("display", "block")
-                .attr("transform", `translate(${dims.margin.left + xScale(d.data.year) + 1}, ${dims.margin.top + yScale(d[1]) - 10})`)
+              }
+              const textElement = textRef.current;
+              const rectElement = rectRef.current;
+              const bbox = textElement.getBBox();
+              rectElement.setAttribute('x', bbox.x - 5);
+              rectElement.setAttribute('y', bbox.y - 3);
+              rectElement.setAttribute('width', bbox.width + 10);
+              rectElement.setAttribute('height', bbox.height + 6);
               svgElement.select("#tooltipGroup")
                 // move the tooltip to where the cursor is 
                 .style("display", "block")
@@ -174,13 +212,19 @@ const TimeBars = () => {
               d3.select(this).attr("stroke-width", "1");  // undo the stroke
             })
           ,
-            update => update,
-            exit => exit,
+            update => update
+              .attr("cx", function(d) { return xScale(d.data.year); })
+              .attr("cy", d => yScale(d[1])),
+            exit => exit.remove()
+          ),
+            update => update.attr("fill", function(d) { return myColor(d.key); }),
+            exit => exit.remove()
         );
+      
 
 
     }
-  }, [filtered]);
+  }, [filtered, showPercents]);
 
 
   const ref = useRef()
@@ -188,6 +232,9 @@ const TimeBars = () => {
 
   return (
     <div style={{width:'90%',}}>
+      <FormGroup>
+        <FormControlLabel control={<Checkbox onChange={handleChange}  checked={showPercents} />} label="Show Percentages" />
+      </FormGroup>
       <svg
         viewBox={`0 0 ${dims.svgWidth} ${dims.svgHeight}`}
         ref={ref}
@@ -196,8 +243,7 @@ const TimeBars = () => {
         <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="areaGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="circleGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-        <rect fill="white" id="backing"></rect>
-        <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><text id="tooltip-text" fontSize={10} fontWeight="bold"></text></g>
+        <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><rect rx="5" fill="white" style={{stroke: 'black'}} ref={rectRef} ></rect><text id="tooltip-text" fontSize={8} fontWeight="bold" ref={textRef} ></text></g>
         
       </svg>
       <div style={{height: '20%'}}></div>
@@ -207,15 +253,25 @@ const TimeBars = () => {
 
 const ProductsCircles = () => {
 
-  var productTypes = [ "ALL", "HOUSEHOLD APPLIANCES",  "HOME FIXTURES",  "HOME EQUIPMENT AND CONTAINERS",  "SPORTS AND RECREATIONAL ACTIVITY",  "TOYS",  "INDUSTRIAL, MEDICAL, AND CHILD-CARE EQUIPMENT",  "PERSONAL CARE ITEMS",  "OTHER"];
-  var productTypes2 = [ "HOUSEHOLD APPLIANCES",  "HOME FIXTURES",  "HOME EQUIPMENT AND CONTAINERS",  "SPORTS AND RECREATIONAL ACTIVITY",  "TOYS",  "INDUSTRIAL, MEDICAL, AND CHILD-CARE EQUIPMENT",  "PERSONAL CARE ITEMS",  "OTHER"];
+  var productTypes = ['ALL', 'HOUSEHOLD APPLIANCES', 'HOUSEHOLD FIXTURES', 'HOME EQUIPMENT', 'SPORTS AND RECREATION', 'TOYS', 'ASSORTED EQUIPMENT', 'PERSONAL CARE ITEMS', 'OTHER'];
+  var productTypes2 = ['HOUSEHOLD APPLIANCES', 'HOUSEHOLD FIXTURES', 'HOME EQUIPMENT', 'SPORTS AND RECREATION', 'TOYS', 'ASSORTED EQUIPMENT', 'PERSONAL CARE ITEMS', 'OTHER'];
+  var yearList = [2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012, 2011, 2010];
+
+  const [year, setAge] = useState(2021);
+
+  const handleChange = (event) => {
+    setAge(event.target.value);
+  };
+
 
   const [dataset, setDataset] = useState(null);
   const [filtered, setFiltered] = useState(null);
   const [productRange, setProductRange] = useState(["ALL"]);
+  const textRef = useRef(null);
+  const rectRef = useRef(null);
 
-  const myColor = d3.scaleOrdinal().domain(productTypes2)
-      .range(d3.schemeSet3);
+  //const myColor = d3.scaleOrdinal().domain(productTypes2)
+      //.range(d3.schemeSet3);
   
   var colorLegend = legendColor()
       .labelFormat(d3.format(".2f"))
@@ -248,15 +304,15 @@ const ProductsCircles = () => {
   const dims = chartDimensions();
 
   useEffect(() => {
-    d3.csv('http://localhost:3000/products111.csv')
+    d3.csv('http://localhost:3000/products10years.csv')
       .then((data) => {
         setDataset(data);
         let filt = data.filter(function (d) {
           if (productRange.includes("ALL") || productRange == []) {
-            return true;
+            return d.Year == year;
           }
           else {
-            return productRange.includes(d.Category);
+            return productRange.includes(d.Category) && d.Year == year;
           }
         });
         
@@ -273,38 +329,30 @@ const ProductsCircles = () => {
     if (dataset) {
       setFiltered(dataset.filter(function (d) {
         if (productRange.includes("ALL") || productRange == []) {
-          return true;
+          return d.Year == year;
         }
         else {
-          return productRange.includes(d.Category);
+          return productRange.includes(d.Category) && d.Year == year ;
         }
       }));
     }
-  }, [productRange]);
+  }, [productRange, year]);
 
   useEffect(() => {
-    console.log("filter changed");
     if (filtered) {
       
       const dim = chartDimensions();
       
       const svgElement = d3.select(ref.current);
-      
 
-      let dataRoll = d3.rollups(filtered, v => [d3.sum(v, d => d.Weight), d3.median(v, d => d.Age)],
-      d => d.Product_Name, d => d.Category);
-      console.log(dataRoll);
-      dataRoll = dataRoll.map(([product_name, cat]) => {
-      return {product_name: product_name, count: cat[0][1][0], age: cat[0][1][1] , category: cat[0][0]}
-      });
-
+      let dataRoll = filtered;
 
       var xScale = d3.scaleLinear()
-        .domain([0, d3.max(dataRoll, d => d.age)])
+        .domain([0, d3.max(dataRoll, d => Number(d.Age))])
         .range([0, dim.width]);
       
       yScale3 = d3.scaleLinear()
-        .domain([1,d3.max(dataRoll, d => d.count)])
+        .domain([1,d3.max(dataRoll, d => Number(d.Weight))])
         .range([dim.height , 0]);
       
       
@@ -349,36 +397,39 @@ const ProductsCircles = () => {
       .join(enter => enter.append("circle")
         .on("mouseover", function (event, d) {  // <-- need to use the regular function definition to have access to "this"
           svgElement.select("#tooltip-text")
-            .text(`${d.product_name}`);
-          let bbox = svgElement.select("#tooltipGroup")
-            .select("text").node().getBoundingClientRect();
-          svgElement.select("#tooltipGroup")
-            .select("rect")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", bbox.width)
-            .attr("height", bbox.height)
+            .text(`${d.Product_Name}`);
+          const textElement = textRef.current;
+          const rectElement = rectRef.current;
+          const bbox = textElement.getBBox();
+          rectElement.setAttribute('x', bbox.x - 5);
+          rectElement.setAttribute('y', bbox.y - 3);
+          rectElement.setAttribute('width', bbox.width + 10);
+          rectElement.setAttribute('height', bbox.height + 6);
           svgElement.select("#tooltipGroup")
             // move the tooltip to where the cursor is 
             .style("display", "block")
-            .attr("transform", `translate(${dims.margin.left + xScale(d.age) + 10}, ${dims.margin.top + yScale3(d.count) - 10})`)
+            .attr("transform", `translate(${dims.margin.left + xScale(Number(d.Age)) + 10}, ${dims.margin.top + yScale3(Number(d.Weight)) - 10})`)
           d3.select(this)
             .attr("stroke", "#333333")
             .attr("stroke-width", 2);
         })
         .on("mouseout", function (event, d) {
           svgElement.select("#tooltipGroup").style("display", "none"); // hide tooltip
-          d3.select(this).attr("stroke", "none");  // undo the stroke
+          d3.select(this).attr("stroke-width", "1");  // undo the stroke
         })
         .transition()
         .duration(1000)
         .ease(d3.easeBounce)
-        .attr("cx", d => xScale(d.age))
-        .attr("cy", d => yScale3(d.count))
+        /** 
+        .attr("cx", d => xScale(Number(d.Age)))
+        .attr("cy", d => yScale3(Number(d.Weight)))
+        */
         .attr("r", 5)
-        .attr("fill", d => myColor(d.category))
+        .attr("fill", d => myColor(d.Category))
         .attr("opacity", 1)
         .attr("class", "circleClass")
+        .attr("stroke", "#333333")
+        .attr("stroke-width", 1)
         ,
       update => update,
       exit => exit
@@ -392,36 +443,37 @@ const ProductsCircles = () => {
       d3.selectAll(".circleClass")
         .on("mouseover", function (event, d) {  // <-- need to use the regular function definition to have access to "this"
           svgElement.select("#tooltip-text")
-            .text(`${d.product_name}`);
-          let bbox = svgElement.select("#tooltipGroup")
-            .select("text").node().getBoundingClientRect
-          svgElement.select("#backing")
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", bbox.width)
-            .attr("height", bbox.height)
-            .attr("transform", `translate(${dims.margin.left + xScale(d.age) + 3}, ${dims.margin.top + yScale3(d.count) - 10})`);
+            .text(`${d.Product_Name}`);
+          const textElement = textRef.current;
+          const rectElement = rectRef.current;
+          const bbox = textElement.getBBox();
+          rectElement.setAttribute('x', bbox.x - 5);
+          rectElement.setAttribute('y', bbox.y - 3);
+          rectElement.setAttribute('width', bbox.width + 10);
+          rectElement.setAttribute('height', bbox.height + 6);
           svgElement.select("#tooltipGroup")
             // move the tooltip to where the cursor is 
             .style("display", "block")
-            .attr("transform", `translate(${dims.margin.left + xScale(d.age) + 3}, ${dims.margin.top + yScale3(d.count) - 10})`)
+            .attr("transform", `translate(${dims.margin.left + xScale(Number(d.Age)) + 3}, ${dims.margin.top + yScale3(Number(d.Weight)) - 10})`)
           d3.select(this)
             .attr("stroke", "#333333")
-            .attr("stroke-width", 2);
+            .attr("stroke-width", 3);
         })
         .on("mouseout", function (event, d) {
           svgElement.select("#tooltipGroup").style("display", "none"); // hide tooltip
-          d3.select(this).attr("stroke", "none");  // undo the stroke
+          d3.select(this).attr("stroke-width", "1");  // undo the stroke
         });
       
       info.transition()
       .duration(1000)
       .ease(d3.easeCubic)
-      .attr("cx", d => xScale(d.age))
-      .attr("cy", d => yScale3(d.count))
+      .attr("cx", d => xScale(Number(d.Age)))
+      .attr("cy", d => yScale3(Number(d.Weight)))
       .attr("r", 5)
-      .attr("fill", d => myColor(d.category))
-      .attr("opacity", 1);
+      .attr("fill", d => myColor(d.Category))
+      .attr("opacity", 1)
+      .attr("stroke", "#333333")
+      .attr("stroke-width", 1);
 
 
 
@@ -442,8 +494,7 @@ const ProductsCircles = () => {
           <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-          <rect fill="white" id="backing"></rect>
-          <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><text id="tooltip-text" fontSize={8}></text></g>
+          <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><rect rx="5" fill="white" style={{stroke: 'black'}} ref={rectRef} ></rect><text id="tooltip-text" fontSize={8} fontWeight="bold" ref={textRef} ></text></g>
           <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right - 300}, ${dims.margin.top + 75})`}></g>
         </svg>
       </div>
@@ -464,7 +515,23 @@ const ProductsCircles = () => {
           })}
         </Select>
       </FormControl>
-    </Box>
+      </Box>
+      <Box sx={{ width: '20%'}}>
+      <FormControl fullWidth>
+        <InputLabel id="demo-simple-select-label">Year</InputLabel>
+        <Select
+          labelId="demo-simple-select-label"
+          id="demo-simple-select"
+          value={year}
+          label="Year"
+          onChange={handleChange}
+        >
+          {yearList.map((value, index) => {
+            return (<MenuItem key = {index} value = {value}>{value}</MenuItem>);
+          })}
+        </Select>
+      </FormControl>
+      </Box>
     </div>
 
     </div>
@@ -809,44 +876,6 @@ const AgeBars = () => {
       console.log(dim);
       
       const svgElement = d3.select(ref.current);
-      /**
-      let dataRoll = d3.rollups(filtered, v => d3.sum(v, d => d.Weight),
-        d => d.Body_Part, d => { 
-          if (d.Sex == 0) {
-            return "UNKNOWN";
-          }
-          if (d.Sex == 1) {
-            return "MALE";
-          }
-          if (d.Sex == 2) {
-            return "FEMALE";
-          }
-          if (d.Sex == 3) {
-            return "NON-BINARY/OTHER";
-          }} 
-        );
-      console.log(dataRoll);
-      dataRoll = dataRoll.map(([body_part, sex]) => {
-        let u, m, f, n = 0;
-        sex.forEach(s => {
-          if (s[0] == "UNKNOWN") {
-            u = s[1]
-          }
-          else if (s[0] == "MALE") {
-            m = s[1]
-          }
-          else if (s[0] == "FEMALE") {
-            f = s[1]
-          }
-          else if (s[0] == "NON-BINARY/OTHER") {
-            n = s[1]
-          }
-        });
-        return {body_part: body_part, "UNKNOWN": u, "MALE": m, "FEMALE": f, "NON-BINARY/OTHER": n, totalcount: d3.sum(sex, d => d[1])}
-      }).sort(function(a, b) {
-        return d3.descending(a.totalcount, b.totalcount);
-      });
-      */
       let dataRoll = d3.rollups(filtered, v => d3.sum(v, d => d.Weight),
       d => d.Body_Part);
       dataRoll = dataRoll.map(([body_part, count]) => {
@@ -857,8 +886,6 @@ const AgeBars = () => {
     }).sort(function(a, b) {
       return d3.descending(+a.count, +b.count);
     });
-
-      dataRoll = dataRoll.slice(0,10);
 
 
 
@@ -877,7 +904,12 @@ const AgeBars = () => {
       .transition()
       .duration(1000)
       .ease(d3.easeQuad)
-      .call(d3.axisBottom(xScale));
+      .call(d3.axisBottom(xScale))
+      .selectAll("text")
+      .attr("transform", `translate(${0})rotate(-20)`)
+      .style("text-anchor", "end")
+      .style("font-size", "5")
+      ;
       //y scale axis
       svgElement.select("#yAxis")
       .attr('transform', `translate(${dim.margin.left}, ${dim.margin.top})`)
@@ -922,45 +954,6 @@ const AgeBars = () => {
       .attr("fill", "black")
       .attr("opacity", 0.75);
 
-      /**
-      const info = svgElement.select("#rectGroup").selectAll("g")
-      .data(stacked, function(d) { return d.body_part; })
-      .join(enter => enter.append("g")
-        .style("fill", d => colors[d.key]),
-      update => update,
-      exit => exit.transition()
-      .duration(300)
-      .attr("height", 0)
-      .attr("opacity", 0)
-      .remove()
-      );
-
-      const rectgroup = info.selectAll("rect")
-      .data((d) => d)
-      .join(enter => enter.append("rect")
-        .attr("x", d => xScale(d.data.body_part))
-        .attr("y", d => yScale(d[1]))
-        .attr("width", xScale.bandwidth())
-        .attr("height", d => {return yScale(d[0]) - yScale(d[1]);})
-        .attr("opacity", 0.75),
-        update => update,
-        exit => exit.transition()
-        .duration(300)
-        .attr("y", yScale(0))
-        .attr("height", 0)
-        .attr("opacity", 0)
-        .remove()
-      );
-
-      rectgroup.transition()
-      .duration(1000)
-      .ease(d3.easeCubic)
-      .attr("x", d => xScale(d.data.body_part))
-      .attr("y", d => yScale(d[1]))
-      .attr("width", xScale.bandwidth())
-      .attr("height", d => {return yScale(d[0]) - yScale(d[1]);})
-      .attr("opacity", 0.75);
-      */
     }
   }, [filtered]);
 
@@ -1008,13 +1001,16 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main>
-        <div style={{width: '90%'}}>
-        <h1>Analyzing Consumer Product-Related Injuries in the U.S</h1>
-        <p>NEISS stores the previous years worth of injury reports, so we can investigate changing trends. Have consumer product injuries changed at all since 2010? First, let’s examine the total estimated injury counts for each year. We can see that despite the continual growth of the U.S population, that the total number of product injuries have largely remained the same. Also notable is the sharp decline </p>
+        <div style={{width: '90%', flexDirection: 'column', alignItems: 'center', display: "flex"}}>
+          <div style={{width: '80%', display: "flex", alignItems: "center", flexDirection: 'column',}}>
+            <h1>Analyzing Consumer Product-Related Injuries in the U.S</h1>
+            
+            <p> NEISS stores the previous years worth of injury reports, so we can investigate changing trends. Have consumer product injuries changed at all since 2010? In the chart below, we can view the total estimated injury counts for each year, separated into categories of consumer products. You can also view the percentage breakdown for each category by clicking the checkbox. We can see that overall, the estimated injuries  </p>
+          </div>
         <TimeBars></TimeBars>
         <p> Where are people getting injured? </p>
         <AgeBars />
-        <Products></Products>
+        <p> Joe mama </p>
         <ProductsCircles />
         </div>
       </main>
