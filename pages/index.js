@@ -317,7 +317,13 @@ const ProductsCircles = () => {
 
 
   const handleChange2 = (event) => {
-    setProductRange(event.target.value);
+    const selectedValues = event.target.value;
+    if (selectedValues.includes('ALL') && selectedValues.length > 1) {
+      selectedValues.splice(selectedValues.indexOf('ALL'), 1);
+    } else if (selectedValues.length === 0) {
+      selectedValues.push('ALL');
+    }
+    setProductRange(selectedValues);
   };
 
   //average age of injury (x-axis) => estimated counts (radius..?) => separated by theme
@@ -1021,11 +1027,13 @@ export default function Home() {
         <br></br><br></br><br></br><br></br>
         
         <h2>Injuries by Age and Body Location</h2>
+        <p>People age 20-45 are most frequently admitted for finger injuries, but other age groups tend to sustain injuries to the head. Elderly people are especially susceptible to injuries of the head and lower trunk.</p>
         <AgeBars />
         <p> Age </p>
         <br></br><br></br><br></br><br></br>
         
         <h2>Injuries by Age and Product Type</h2>
+        <p></p>
         <ProductsCircles />
         <br></br><br></br><br></br><br></br>
         </div>
