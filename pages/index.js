@@ -262,10 +262,12 @@ const TimeBars = () => {
         <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="areaGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="circleGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-        <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><rect rx="5" fill="white" style={{stroke: 'black'}} ref={rectRef} ></rect><text id="tooltip-text" fontSize={8} fontWeight="bold" ref={textRef} ></text></g>
+        <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right + 50}, ${dims.margin.top + 75})`}></g>
         <text id="yAxisLabel"x={-(dims.margin.top + dims.height / 2)} y={30} transform={`rotate(${-90})`} textAnchor="middle" fontSize={15} >Population</text>
         <text x={dims.svgWidth / 2} y={dims.svgHeight - 20} textAnchor="middle" fontSize={15} >Year</text>
-        <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right + 50}, ${dims.margin.top + 75})`}></g>
+        <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><rect rx="5" fill="white" style={{stroke: 'black'}} ref={rectRef} ></rect><text id="tooltip-text" fontSize={13} fontWeight="bold" ref={textRef} ></text></g>
+
+        
         
       </svg>
       <div style={{height: '20%'}}></div>
@@ -288,19 +290,22 @@ const ProductsCircles = () => {
 
   const [dataset, setDataset] = useState(null);
   const [filtered, setFiltered] = useState(null);
+  const [filtered2, setFiltered2] = useState(null);
+  const [trackedProducts, setTrackedProducts] = useState(["FLOORS OR FLOORING MATERIALS"]);
   const [productRange, setProductRange] = useState(["ALL"]);
   const textRef = useRef(null);
   const rectRef = useRef(null);
+  const textRef2 = useRef(null);
 
-  //const myColor = d3.scaleOrdinal().domain(productTypes2)
-      //.range(d3.schemeSet3);
+  const myColor2 = d3.scaleOrdinal().domain(productTypes2)
+      .range(d3.schemeSet3);
   
   var colorLegend = legendColor()
       .labelFormat(d3.format(".2f"))
       .title("Product Categories")
       .titleWidth(175)
       .labelWrap(175)
-      .scale(myColor);
+      .scale(myColor2);
   
 
   
@@ -309,7 +314,7 @@ const ProductsCircles = () => {
     let dimensions = {
       svgWidth: 1000,
       svgHeight: 400,
-      margin: {top: 40, left: 100, bottom: 30, right: 50}
+      margin: {top: 40, left: 60, bottom: 60, right: 250}
     };
     dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
     dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
@@ -327,6 +332,29 @@ const ProductsCircles = () => {
     setProductRange(selectedValues);
   };
 
+        
+  const handleAdd = (product) => {
+    console.log("adding", product);
+    console.log("to", trackedProducts);
+    let pList = [...trackedProducts, product]
+    console.log(pList);
+    setTrackedProducts(pList);
+  }
+
+  const handleRemove = (product) => {
+    console.log("removing", product);
+    console.log("from", trackedProducts);
+    let pList = trackedProducts.filter(a => a !== product);
+    if (pList.length > 0) {
+      setTrackedProducts(pList);
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+
+
   //average age of injury (x-axis) => estimated counts (radius..?) => separated by theme
   
   const dims = chartDimensions();
@@ -337,14 +365,19 @@ const ProductsCircles = () => {
         setDataset(data);
         let filt = data.filter(function (d) {
           if (productRange.includes("ALL") || productRange == []) {
-            return d.Year == year;
+            return d.Year == year && d.Weight > 10000;
           }
           else {
-            return productRange.includes(d.Category) && d.Year == year;
+            return productRange.includes(d.Category) && d.Year == year && d.Weight > 10000;
           }
         });
         
+        let filt2 = data.filter(function (d) {
+          return trackedProducts.includes(d.Product_Name);
+        })
+        
         setFiltered(filt);
+        setFiltered2(filt2);
       })
       .catch((err) => {
         console.log(err)
@@ -357,33 +390,47 @@ const ProductsCircles = () => {
     if (dataset) {
       setFiltered(dataset.filter(function (d) {
         if (productRange.includes("ALL") || productRange == []) {
-          return d.Year == year;
+          return d.Year == year && d.Weight > 10000;
         }
         else {
-          return productRange.includes(d.Category) && d.Year == year ;
+          return productRange.includes(d.Category) && d.Year == year && d.Weight > 10000 ;
         }
       }));
     }
   }, [productRange, year]);
 
   useEffect(() => {
-    if (filtered) {
+    console.log("tracked changed");
+    console.log(trackedProducts);
+    if (dataset) {
+      let filt2 = dataset.filter(function (d) {
+        return trackedProducts.includes(d.Product_Name);
+      });
+      setFiltered2(filt2);    
+    }
+  }, [trackedProducts]);
+
+  useEffect(() => {
+    if (filtered && trackedProducts) {
       
       const dim = chartDimensions();
       
       const svgElement = d3.select(ref.current);
 
-      let dataRoll = filtered;
+      let dataRoll = filtered.map((obj) => {
+        obj.Weight = Number(obj.Weight);
+        obj.Age = Number(obj.Age);
+        return obj;
+      });
 
       var xScale = d3.scaleLinear()
-        .domain([0, d3.max(dataRoll, d => Number(d.Age))])
+        .domain([0, d3.max(dataRoll, d => d.Age)])
         .range([0, dim.width]);
       
       yScale3 = d3.scaleLinear()
-        .domain([1,d3.max(dataRoll, d => Number(d.Weight))])
+        .domain([-5000,d3.max(dataRoll, d => d.Weight)])
         .range([dim.height , 0]);
-      
-      
+
 
       
       //x scale axis
@@ -396,7 +443,7 @@ const ProductsCircles = () => {
 
 
 
-      //svgElement.select("#legend").call(colorLegend);
+      svgElement.select("#legend").call(colorLegend);
 
       //y scale axis
       svgElement.select("#yAxis")
@@ -419,33 +466,60 @@ const ProductsCircles = () => {
 
       //old way of doing this i honestly think this is lowkey better
       const info = svgElement.select("#rectGroup").selectAll("circle")
-      .data(dataRoll)
+      .data(dataRoll, function(d) { return d.Product_Name; })
       .join(enter => enter.append("circle")
-        .on("mouseover", function (event, d) {  // <-- need to use the regular function definition to have access to "this"
+        .on("mouseover", function (event, d) { 
+          svgElement.select("#tooltipGroup")
+          // move the tooltip to where the cursor is 
+          .style("display", "block")
+          .attr("transform", `translate(${dims.margin.left + xScale(d.Age) + 10}, ${dims.margin.top + yScale3(d.Weight) - 10})`)
+           // <-- need to use the regular function definition to have access to "this"
           svgElement.select("#tooltip-text")
             .text(`${d.Product_Name}`);
+          svgElement.select("#tooltip-text2")
+            .text(`Estimated Injury Count: ${Math.round(d.Weight)}`);
+            svgElement.select("#tooltip-text3")
+            .text(`Median Age of Injury: ${d.Age}`);
           const textElement = textRef.current;
           const rectElement = rectRef.current;
+          const gElement = textRef2.current;
+          const bbox2 = gElement.getBBox();
           const bbox = textElement.getBBox();
+
+
           rectElement.setAttribute('x', bbox.x - 5);
           rectElement.setAttribute('y', bbox.y - 3);
-          rectElement.setAttribute('width', bbox.width + 10);
-          rectElement.setAttribute('height', bbox.height + 6);
-          svgElement.select("#tooltipGroup")
-            // move the tooltip to where the cursor is 
-            .style("display", "block")
-            .attr("transform", `translate(${dims.margin.left + xScale(Number(d.Age)) + 10}, ${dims.margin.top + yScale3(Number(d.Weight)) - 10})`)
-          d3.select(this)
-            .attr("stroke", "#333333")
-            .attr("stroke-width", 2);
+          svgElement.select("#tooltip-text2").attr('y', bbox.height);
+          svgElement.select("#tooltip-text3").attr('y', bbox.height * 2);
+          rectElement.setAttribute('width', Math.max(bbox.width, bbox2.width) + 10);
+          rectElement.setAttribute('height', bbox.height * 3 + 6);
+          if (d3.select(this).attr("stroke") != "black") {
+            d3.select(this)
+              .attr("stroke", "#333333")
+              .attr("stroke-width", 3);
+          }
         })
         .on("mouseout", function (event, d) {
           svgElement.select("#tooltipGroup").style("display", "none"); // hide tooltip
-          d3.select(this).attr("stroke-width", "1");  // undo the stroke
+          if (d3.select(this).attr("stroke-width") != 4) {
+            d3.select(this).attr("stroke-width", 1);
+          }
         })
-        .transition()
-        .duration(1000)
-        .ease(d3.easeBounce)
+        .on("click", function (event, d) {
+          if (d3.select(this).attr("stroke") != "black") {
+            d3.select(this).attr("stroke-width", 4);
+            d3.select(this).attr("stroke", "black");
+            handleAdd(d.Product_Name);
+          }
+          else {
+            if (handleRemove(d.Product_Name)) {
+              d3.select(this)
+                .attr("stroke", "#333333")
+                .attr("stroke-width", 3);
+            }
+            
+          }
+        })
         /** 
         .attr("cx", d => xScale(Number(d.Age)))
         .attr("cy", d => yScale3(Number(d.Weight)))
@@ -454,8 +528,22 @@ const ProductsCircles = () => {
         .attr("fill", d => myColor(d.Category))
         .attr("opacity", 1)
         .attr("class", "circleClass")
-        .attr("stroke", "#333333")
-        .attr("stroke-width", 1)
+        .attr("stroke", d => {
+          if (trackedProducts.includes(d.Product_Name)) {
+            return "black";
+          }
+          else {
+            return "#333333";
+          }
+        })
+        .attr("stroke-width", d => {
+          if (trackedProducts.includes(d.Product_Name)) {
+            return 4;
+          }
+          else {
+            return 1;
+          }
+        })
         ,
       update => update,
       exit => exit
@@ -467,46 +555,236 @@ const ProductsCircles = () => {
       );
     
       d3.selectAll(".circleClass")
-        .on("mouseover", function (event, d) {  // <-- need to use the regular function definition to have access to "this"
+        .on("mouseover", function (event, d) {
+          svgElement.select("#tooltipGroup")
+          // move the tooltip to where the cursor is 
+          .style("display", "block")
+          .attr("transform", `translate(${dims.margin.left + xScale(d.Age) + 10}, ${dims.margin.top + yScale3(d.Weight) - 10})`)  // <-- need to use the regular function definition to have access to "this"
           svgElement.select("#tooltip-text")
             .text(`${d.Product_Name}`);
+          svgElement.select("#tooltip-text2")
+            .text(`Estimated Injury Count: ${Math.round(d.Weight)}`);
+          svgElement.select("#tooltip-text3")
+            .text(`Median Age of Injury: ${d.Age}`);
           const textElement = textRef.current;
           const rectElement = rectRef.current;
+          const gElement = textRef2.current;
+          const bbox2 = gElement.getBBox();
           const bbox = textElement.getBBox();
           rectElement.setAttribute('x', bbox.x - 5);
           rectElement.setAttribute('y', bbox.y - 3);
-          rectElement.setAttribute('width', bbox.width + 10);
-          rectElement.setAttribute('height', bbox.height + 6);
-          svgElement.select("#tooltipGroup")
-            // move the tooltip to where the cursor is 
-            .style("display", "block")
-            .attr("transform", `translate(${dims.margin.left + xScale(Number(d.Age)) + 3}, ${dims.margin.top + yScale3(Number(d.Weight)) - 10})`)
-          d3.select(this)
-            .attr("stroke", "#333333")
-            .attr("stroke-width", 3);
+          svgElement.select("#tooltip-text2").attr('y', bbox.height);
+          svgElement.select("#tooltip-text3").attr('y', bbox.height * 2);
+          rectElement.setAttribute('width', Math.max(bbox.width, bbox2.width) + 10);
+          rectElement.setAttribute('height', bbox.height * 3 + 6);
+
+          if (d3.select(this).attr("stroke") != "black") {
+            d3.select(this)
+              .attr("stroke", "#333333")
+              .attr("stroke-width", 3);
+          }
         })
         .on("mouseout", function (event, d) {
           svgElement.select("#tooltipGroup").style("display", "none"); // hide tooltip
-          d3.select(this).attr("stroke-width", "1");  // undo the stroke
+          if (d3.select(this).attr("stroke-width") != 4) {
+            d3.select(this).attr("stroke-width", 1);
+          }
+        })
+        .on("click", function (event, d) {
+          if (d3.select(this).attr("stroke") != "black") {
+            d3.select(this).attr("stroke-width", 4);
+            d3.select(this).attr("stroke", "black");
+            handleAdd(d.Product_Name);
+          }
+          else {
+            if (handleRemove(d.Product_Name)) {
+              d3.select(this)
+                .attr("stroke", "#333333")
+                .attr("stroke-width", 3);
+            }
+          }
         });
       
       info.transition()
-      .duration(1000)
-      .ease(d3.easeCubic)
-      .attr("cx", d => xScale(Number(d.Age)))
-      .attr("cy", d => yScale3(Number(d.Weight)))
-      .attr("r", 5)
-      .attr("fill", d => myColor(d.Category))
-      .attr("opacity", 1)
-      .attr("stroke", "#333333")
-      .attr("stroke-width", 1);
+        .duration(1000)
+        .ease(d3.easeCubic)
+        .attr("cx", d => xScale(d.Age))
+        .attr("cy", d => yScale3(d.Weight))
+        .attr("r", 5)
+        .attr("fill", d => myColor(d.Category))
+        .attr("opacity", 1);
 
 
 
     }
-  }, [filtered]);
+  }, [filtered, trackedProducts]);
+
+  useEffect(() => {
+    const dim = chartDimensions();
+    const svgElement = d3.select(ref3.current);
+    if (filtered2) {
+      let dataRoll = filtered2.map((obj) => {
+        obj.Weight = Number(obj.Weight);
+        obj.Year = Number(obj.Year);
+        obj.Age = Number(obj.Age);
+        return obj;
+      });
+      dataRoll = d3.groups  (dataRoll, d => d.Product_Name).map(([product_name, values]) => {
+        return {Product_Name: product_name, values: values}
+      });
+      
+      console.log("lined data: ", dataRoll);
+
+
+
+      var xScale = d3.scaleLinear()
+      .domain(d3.extent(dataRoll[0].values, function(d) {return d.Year;}))
+      .range([0, dim.width]);
+
+      var yScale = d3.scaleLinear()
+        .domain([0,d3.max(dataRoll, v => d3.max(v.values, d => d.Age))])
+        .range([dim.height , 0]);
+
+      let lineGenerator = d3.line()
+        .x(d => xScale(d.Year))
+        .y(d => yScale(d.Age));
+
+      //x-axis
+      svgElement.select("#xAxis")
+      .attr('transform', `translate(${dim.margin.left}, ${dim.height + dim.margin.top})`)
+      .transition()
+      .duration(200)
+      .ease(d3.easeQuad)
+      .call(d3.axisBottom(xScale).tickFormat(d3.format("d")));
+
+      //y-axis
+      svgElement.select("#yAxis")
+      .attr('transform', `translate(${dim.margin.left}, ${dim.margin.top})`)
+      .transition()
+      .duration(1000)
+      .ease(d3.easeQuad)
+      .call(d3.axisLeft(yScale));
+
+      //coloration
+      const myColor2 = d3.scaleOrdinal().domain(trackedProducts)
+        .range(d3.schemeCategory10);
+
+      var colorLegend = legendColor()
+        .labelFormat(d3.format(".2f"))
+        .title("Product Names")
+        .titleWidth(175)
+        .labelWrap(175)
+        .scale(myColor2);
+  
+      
+
+      const info = svgElement.select("#rectGroup").selectAll("path")
+        .data(dataRoll, function(d) {return d.Product_Name;})
+        .join(enter => enter.append("path")
+          .attr("d", d => lineGenerator(d.values))
+          .attr("fill", "none")
+          .attr("stroke", d => myColor2(d.Product_Name))
+          .attr("stroke-width", 1.5)
+          ,
+          update => update,
+          exit => exit.transition().duration(300).ease(d3.easeCubic).attr("opacity", 0).remove()
+        );
+      info.transition()
+        .duration(300)
+        .ease(d3.easeCubic)
+        .attr("d", d => lineGenerator(d.values))
+        .attr("stroke", d => myColor2(d.Product_Name));
+
+
+
+      }
+    
+  }, [filtered2]);
+  useEffect(() => {
+    const dim = chartDimensions();
+    const svgElement = d3.select(ref2.current);
+    if (filtered2) {
+      console.log("filtered2 changing");
+      let dataRoll = filtered2.map((obj) => {
+        obj.Weight = Number(obj.Weight);
+        obj.Year = Number(obj.Year);
+        return obj;
+      });
+      dataRoll = d3.groups  (dataRoll, d => d.Product_Name).map(([product_name, values]) => {
+        return {Product_Name: product_name, values: values}
+      });
+      
+      console.log("lined data: ", dataRoll);
+
+
+
+      var xScale = d3.scaleLinear()
+      .domain(d3.extent(dataRoll[0].values, function(d) {return d.Year;}))
+      .range([0, dim.width]);
+
+      var yScale = d3.scaleLinear()
+        .domain([-5000,d3.max(dataRoll, v => d3.max(v.values, d => d.Weight))])
+        .range([dim.height , 0]);
+
+      let lineGenerator = d3.line()
+        .x(d => xScale(d.Year))
+        .y(d => yScale(d.Weight));
+
+      //x-axis
+      svgElement.select("#xAxis")
+      .attr('transform', `translate(${dim.margin.left}, ${dim.height + dim.margin.top})`)
+      .transition()
+      .duration(200)
+      .ease(d3.easeQuad)
+      .call(d3.axisBottom(xScale).tickFormat(d3.format("d")));
+
+      //y-axis
+      svgElement.select("#yAxis")
+      .attr('transform', `translate(${dim.margin.left}, ${dim.margin.top})`)
+      .transition()
+      .duration(1000)
+      .ease(d3.easeQuad)
+      .call(d3.axisLeft(yScale3));
+
+      //coloration
+      const myColor2 = d3.scaleOrdinal().domain(trackedProducts)
+      .range(d3.schemeCategory10);
+
+      var colorLegend = legendColor()
+        .labelFormat(d3.format(".2f"))
+        .title("Product Names")
+        .titleWidth(175)
+        .labelWrap(175)
+        .scale(myColor2);
+  
+      svgElement.select("#legend").call(colorLegend);
+
+      const info = svgElement.select("#rectGroup").selectAll("path")
+        .data(dataRoll, function(d) {return d.Product_Name;})
+        .join(enter => enter.append("path")
+          .attr("d", d => lineGenerator(d.values))
+          .attr("fill", "none")
+          .attr("stroke", d => myColor2(d.Product_Name))
+          .attr("stroke-width", 1.5)
+          ,
+          update => update,
+          exit => exit.transition().duration(300).ease(d3.easeCubic).attr("opacity", 0).remove()
+        );
+      info.transition()
+        .duration(300)
+        .ease(d3.easeCubic)
+        .attr("d", d => lineGenerator(d.values))
+        .attr("stroke", d => myColor2(d.Product_Name));
+
+
+
+      }
+    
+  }, [filtered2]);
 
   const ref = useRef();
+  const ref2 = useRef();
+  const ref3 = useRef();
 
 
   return (
@@ -520,12 +798,12 @@ const ProductsCircles = () => {
           <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-          <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><rect rx="5" fill="white" style={{stroke: 'black'}} ref={rectRef} ></rect><text id="tooltip-text" fontSize={8} fontWeight="bold" ref={textRef} ></text></g>
-          <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right - 300}, ${dims.margin.top + 75})`}></g>
+          <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right + 50}, ${dims.margin.top + 30})`}></g>
+          <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`} >          <rect rx="5" fill="white" style={{stroke: 'black'}} ref={rectRef} ></rect> <text id="tooltip-text" fontSize={14} fontWeight="bold" ref={textRef}></text> <text id="tooltip-text2" fontSize={10} fontWeight="bold" ref={textRef2} ></text> <text id="tooltip-text3" fontSize={10} fontWeight="bold" ></text></g>
         </svg>
       </div>
-      
-      <Box sx={{ width: '10%'}}>
+      <div style={{width: '20%', display: 'flex', flexDirection: 'column'}}>
+      <Box sx={{ width: '100%', paddingBottom: '50px'}}>
       <FormControl fullWidth>
         <InputLabel id="demo-simple-select-label">Product Category</InputLabel>
         <Select
@@ -542,7 +820,7 @@ const ProductsCircles = () => {
         </Select>
       </FormControl>
       </Box>
-      <Box sx={{ width: '10%'}}>
+      <Box sx={{ width: '100%'}}>
       <FormControl fullWidth>
         <InputLabel id="demo-simple-select-label">Year</InputLabel>
         <Select
@@ -558,8 +836,32 @@ const ProductsCircles = () => {
         </Select>
       </FormControl>
       </Box>
+      </div>
     </div>
-
+      <div style={{width: '100%', display: 'flex', flexDirection: 'row'}}>
+      <div style={{width: '50%'}}>
+      <svg
+          viewBox={`0 0 ${dims.svgWidth} ${dims.svgHeight}`}
+          ref={ref2}
+        >
+          <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+          <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+          <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+          <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right + 50}, ${dims.margin.top + 30})`}></g>
+      </svg>
+      </div>
+      <div style={{width: '50%'}}>
+      <svg
+          viewBox={`0 0 ${dims.svgWidth} ${dims.svgHeight}`}
+          ref={ref3}
+        >
+          <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+          <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+          <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+          <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right + 50}, ${dims.margin.top + 30})`}></g>
+      </svg>
+      </div>
+      </div>
     </div>
     
   );
@@ -711,8 +1013,7 @@ const Products = () => {
         .attr("font-weight", "bold")
         .attr("fill", "white")
         .style("text-anchor", "start");
-      
-      console.log(dataRoll);
+
 
       //old way of doing this i honestly think this is lowkey better
       const info = svgElement.select("#rectGroup").selectAll("rect")
@@ -848,7 +1149,6 @@ const AgeBars = () => {
   useEffect(() => {
     d3.csv('http://localhost:3000/body_parts.csv')
       .then((data) => {
-        console.log(data);
         setDataset(data);
         setFiltered(data);
       })
@@ -862,8 +1162,6 @@ const AgeBars = () => {
 
 
   useEffect(() => {
-    console.log("this is the data");
-    console.log(dataset);
   }, [dataset])
 
   const handleChange = (event, newValue) => {
@@ -877,10 +1175,7 @@ const AgeBars = () => {
       setFiltered(dataset.filter(function (d) {
         return (d.Age >= ageRange[0] && d.Age <= ageRange[1])
       }));
-      console.log(filtered);
     }
-    console.log("changed agerange");
-    console.log(ageRange);
   }, [ageRange]);
 
   useEffect(() => {
@@ -889,7 +1184,6 @@ const AgeBars = () => {
 
 
       const dim = chartDimensions();
-      console.log(dim);
       
       const svgElement = d3.select(ref.current);
       let dataRoll = d3.rollups(filtered, v => d3.sum(v, d => d.Weight),
@@ -934,7 +1228,6 @@ const AgeBars = () => {
       .ease(d3.easeQuad)
       .call(d3.axisLeft(yScale));
       
-      console.log(dataRoll);
 
       /**
       const stacked = d3.stack().keys(["UNKNOWN","MALE","FEMALE","NON-BINARY/OTHER"])(dataRoll);
@@ -988,20 +1281,245 @@ const AgeBars = () => {
         <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         
       </svg>
+      <div>
+      <div style={{width: '50%'}}>
+        <p>Age Range for Injuries:</p>
+      </div>
       <Slider
+        sx={{width: '50%'}}
         getAriaLabel={() => 'Age range'}
         value={ageRange}
         onChange={handleChange}
         min={1}
         max={120}
-        valueLabelDisplay="auto"
         step={1}
+        valueLabelDisplay="on"
       />
-      <div style={{height: '20%'}}></div>
+       </div>
     </div>
   );
 }
 
+
+const Response = () => {
+  const chartDimensions = () => {
+    let dimensions = {
+      svgWidth: 1000,
+      svgHeight: 400,
+      margin: {top: 60, left: 100, bottom: 60, right: 100}
+    };
+    dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
+    dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
+    return dimensions;
+  }
+
+  const dims = chartDimensions();
+  const ref = useRef();
+
+  const [ageRange, setAgeRange] = useState("");
+  const [sex, setSex] = useState("");
+  const [race, setRace] = useState("");
+  const [filtered, setFiltered] = useState(null);
+  const [dataset, setDataset] = useState(null);
+
+  const [text1, setText1] = useState("");
+  const [productName, setProductName] = useState("");
+  const [productChance, setProductChance] = useState("");
+  const [text2, setText2] = useState("");
+  const [diagnosis, setDiagnosis] = useState("");
+  const [diagnosisChance, setDiagnosisChance] = useState("");
+  const [text3, setText3] = useState("");
+  const [bpart, setBpart] = useState("");
+  const [bpartChance, setBpartChance] = useState("");
+
+
+  const ageTypes = ["", "1-10", "11-20", "21-30", "31-40", "41-65", "65-100"];
+  const ages = {"": [], "1-10": [1,10], "11-20": [11,20], "21-30": [21,30], "31-40":[31,40], "41-65":[41, 65], "65-100": [65, 100] }
+  const sexTypes = ["","MALE", "FEMALE", "NON-BINARY/OTHER"];
+  const raceTypes = ["","WHITE", "BLACK/AFRICAN AMERICAN","OTHER","ASIAN","AMERICAN INDIAN/ALASKA NATIVE","NATIVE HAWAIIAN/PACIFIC ISLANDER"];
+
+  const handleChange = (event) => {
+    setAgeRange(event.target.value);
+  };
+  const handleSexChange = (event) => {
+    setSex(event.target.value);
+  };
+  const handleRaceChange = (event) => {
+    setRace(event.target.value);
+  };
+
+  const handleClick = () => {
+    if (ageRange != "" && sex != "" && race != "") {
+      let ageBr = ages[ageRange];
+      let filt = dataset.filter(function(d) {
+        return (d.Age >= ageBr[0] && d.Age <= ageBr[1]) && (d.Sex2 == sex) && (d.Race2 == race) && (d.Diag != "OTHER")
+      })
+      console.log("its filt:", filt);
+      setFiltered(filt);
+    }
+    else {
+      setText1("Please submit your information properly!");
+    }
+  }
+  
+
+  function getRandomString(arr) {
+    let total = 0;
+    for (let i = 0; i < arr.length; i++) {
+      total += arr[i][1];
+    }
+    let randomNum = Math.random() * total;
+    let sum = 0;
+    for (let i = 0; i < arr.length; i++) {
+      sum += arr[i][1];
+      if (randomNum <= sum) {
+        return [arr[i][0], arr[i][1] / total];
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (filtered) {
+      const svgElement = d3.select(ref.current);
+
+      let rollProduct = d3.rollups(filtered, v => d3.sum(v, d => d.Weight), d => d.Product_Name);
+      let [product, prodChance] = getRandomString(rollProduct);
+      let filtered2 = filtered.filter(function (d) {
+        return d.Product_Name == product;
+      });
+
+      let rollDiag = d3.rollups(filtered2, v => d3.sum(v, d => d.Weight), d => d.Diag);
+      let [diag, diagChance] = getRandomString(rollDiag);
+      let filtered3 = filtered2.filter(function (d) {
+        return d.Diag == diag;
+      });
+      let rollBP = d3.rollups(filtered3, v => d3.sum(v, d => d.Weight), d => d.BodyPart);
+      let [bp, bpChance] = getRandomString(rollBP);
+      let filteredFINAL = filtered3.filter(function (d) {
+        return d.BodyPart == bp;
+      });
+
+      console.log(filteredFINAL);
+      let rollNarr = d3.rollups(filtered3, v => d3.sum(v, d => d.Weight), d => d.Narrative_1);
+      let narr = getRandomString(rollNarr)[0];
+      setText1(`Oh no! You were using a`);
+      setProductName(`${product}`);
+      setProductChance(`(${Math.round(prodChance * 100 * 100) / 100}\% chance)`);
+      setText2(`when you suffered a`);
+      setDiagnosis(`${diag}`);
+      setDiagnosisChance(`(${Math.round(diagChance * 100 * 100) / 100}\% chance)`);
+      setText3(`to your`);
+      setBpart(`${bp}`);
+      setBpartChance(`(${Math.round(bpChance * 100 * 100) / 100}\% chance)`);
+
+
+    }
+  }, [filtered]);
+
+
+
+
+
+
+  useEffect(() => {
+    d3.csv('http://localhost:3000/formatter.csv')
+      .then((data) => {
+        setDataset(data);
+      })
+      .catch((err) => {
+        console.log(err)
+        console.log("csv error");
+        return null;
+    });
+  }, []);
+
+  
+
+  return (
+    <div style={{width:'90%',}}>
+      <h1>How might I get injured?</h1>
+      <p>Want to figure out what you should stay away from and what might be the most likely injury for you? Tell us a bit about yourself and we'll generate an injury that's likely to occur for you! </p>
+      <br></br>
+      <div></div>
+      <div  style={{width:'100%', display: "flex", flexDirection: 'row'}}>
+      <h3 style={{paddingRight:'10px'}}> I am </h3>
+      <Box sx={{ minWidth: 120, maxWidth: 120 }}>
+      <FormControl fullWidth>
+        <InputLabel id="demo-simple-select-label">Age</InputLabel>
+        <Select
+          labelId="demo-simple-select-label"
+          id="demo-simple-select"
+          value={ageRange}
+          label="Age Range"
+          onChange={handleChange}
+        >
+          {ageTypes.map((value, index) => {
+            return (<MenuItem key = {index} value = {value}>{value}</MenuItem>);
+          })}
+        </Select>
+      </FormControl>
+      </Box>
+      <h3 style={{paddingLeft:'10px', paddingRight:'10px'}}> years old. </h3>
+      <h3 style={{paddingRight:'10px'}}> I am </h3>
+      <Box sx={{ minWidth: 120, maxWidth: 120 }}>
+      <FormControl fullWidth>
+        <InputLabel id="demo-simple-select-label">Sex</InputLabel>
+        <Select
+          labelId="demo-simple-select-label"
+          id="demo-simple-select"
+          value={sex}
+          label="Sex"
+          onChange={handleSexChange}
+        >
+          {sexTypes.map((value, index) => {
+            return (<MenuItem key = {index} value = {value}>{value}</MenuItem>);
+          })}
+        </Select>
+      </FormControl>
+      </Box>
+      <h3 style={{paddingLeft:'10px', paddingRight:'10px'}}> and </h3>
+      <Box sx={{ minWidth: 250, maxWidth: 250 }}>
+      <FormControl fullWidth>
+        <InputLabel id="demo-simple-select-label">Race</InputLabel>
+        <Select
+          labelId="demo-simple-select-label"
+          id="demo-simple-select"
+          value={race}
+          label="Race"
+          onChange={handleRaceChange}
+        >
+          {raceTypes.map((value, index) => {
+            return (<MenuItem key = {index} value = {value}>{value}</MenuItem>);
+          })}
+        </Select>
+      </FormControl>
+      </Box>
+      <div style={{paddingTop: '10px', paddingLeft: '10px'}}>
+        <Button  variant="contained" color="success" onClick={handleClick}>
+        Generate
+        </Button> 
+      </div>    
+      </div>
+      <div style={{width: '100%', aspectRatio: 4}}>
+          
+          <p>{text1}</p>
+          <p>{productName}</p>
+          <p>{productChance}</p>
+          <p>{text2}</p>
+          <p>{diagnosis}</p>
+          <p>{diagnosisChance}</p>
+          <p>{text3}</p>
+          <p>{bpart}</p>
+          <p>{bpartChance}</p>
+          <p></p>
+      </div>
+      
+      
+    
+    </div>
+  );
+
+}
 export default function Home() {
   useEffect(() => {
   
@@ -1021,22 +1539,25 @@ export default function Home() {
           <div style={{width: '80%', display: "flex", alignItems: "center", flexDirection: 'column',}}>
             <h1>Consumer Product-Related Injuries in the U.S</h1>
             
-            <h2>Injuries by Product Type</h2>
+            
             <p> Using annual NEISS reports, we investigate how consumer product injuries have changed since 2010. <br></br><br></br>The chart below shows the estimated injury counts for each year, categorized by type of consumer product. You can view the percentage breakdown for each category by clicking the checkbox. <br></br><br></br>Overall, product injuries remained steady year-over-year until experiencing a significant decline in 2019, especially in sports and recreation products, then began to return to previous levels in 2020.</p>
           </div>
+          <h2>Injuries by Product Type</h2>
         <TimeBars></TimeBars>
         <br></br><br></br><br></br><br></br>
         
+
+        <br></br><br></br><br></br><br></br>
+        
+        <h2>Injury Counts and Median Injury Age of Products</h2>
+        <p>Let's examine the individual consumer products that are causing injury. Here, we have a plot of every single product with over 10000 estimated injuries with their estimated injury count, plotted against the median age of individuals injured by said product. If we look at the highest injury count </p>
+        <ProductsCircles />
+        <br></br><br></br><br></br><br></br>
         <h2>Injuries by Age and Body Location</h2>
         <p>People age 20-45 are most frequently admitted for finger injuries, but other age groups tend to sustain injuries to the head. Elderly people are especially susceptible to injuries of the head and lower trunk.</p>
         <AgeBars />
-        <p> Age </p>
         <br></br><br></br><br></br><br></br>
-        
-        <h2>Injuries by Age and Product Type</h2>
-        <p></p>
-        <ProductsCircles />
-        <br></br><br></br><br></br><br></br>
+        <Response></Response>
         </div>
       </main>
       <style jsx>{`
