@@ -1,7 +1,5 @@
 import Head from 'next/head'
-import Image from 'next/image'
-import { Inter } from '@next/font/google'
-import styles from '@/styles/Home.module.css'
+import Image from 'next/image';
 import * as React from 'react';
 import * as d3 from 'd3';
 import { useEffect, useRef, useState, useInterval, Component } from 'react';
@@ -10,7 +8,6 @@ import { legendColor } from 'd3-svg-legend';
 import legend from 'd3-svg-legend';
 
 
-const inter = Inter({ subsets: ['latin'] })
 var yScale3;
 var myColor;
 
