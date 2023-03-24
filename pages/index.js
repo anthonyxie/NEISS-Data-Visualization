@@ -1116,7 +1116,13 @@ const Response = () => {
         return (d.Age >= ageBr[0] && d.Age <= ageBr[1]) && (d.Sex2 == sex) && (d.Race2 == race) && (d.Diag != "OTHER")
       })
       console.log("its filt:", filt);
-      setFiltered(filt);
+      if (filt.length > 0) {
+        setFiltered(filt);
+      }
+      else {
+        setText1("Unfortunately we don't have enough data for this demographic!");
+      }
+      
     }
     else {
       setText1("Please submit your information properly!");
