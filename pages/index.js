@@ -747,7 +747,7 @@ const ProductsCircles = () => {
       .transition()
       .duration(1000)
       .ease(d3.easeQuad)
-      .call(d3.axisLeft(yScale3));
+      .call(d3.axisLeft(yScale));
 
       //coloration
       const myColor2 = d3.scaleOrdinal().domain(trackedProducts)
