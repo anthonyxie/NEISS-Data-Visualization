@@ -1331,6 +1331,9 @@ const Response = () => {
   const [text3, setText3] = useState("");
   const [bpart, setBpart] = useState("");
   const [bpartChance, setBpartChance] = useState("");
+  const [text4, setText4] = useState("");
+  const [narrative, setNarrative] = useState("");
+
 
 
   const ageTypes = ["", "1-10", "11-20", "21-30", "31-40", "41-65", "65-100"];
@@ -1411,6 +1414,9 @@ const Response = () => {
       setText3(`to your`);
       setBpart(`${bp}`);
       setBpartChance(`(${Math.round(bpChance * 100 * 100) / 100}\% chance)`);
+      setText4(`Your injury report`);
+      setNarrative(`${narr}`);
+
 
 
     }
@@ -1511,7 +1517,8 @@ const Response = () => {
           <p>{text3}</p>
           <p>{bpart}</p>
           <p>{bpartChance}</p>
-          <p></p>
+          <p>{text4}</p>
+          <p>{narrative}</p>
       </div>
       
       
