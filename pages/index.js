@@ -702,7 +702,7 @@ const ProductsCircles = () => {
 
       }
     
-  }, [filtered2]);
+  }, [filtered2, trackedProducts]);
   useEffect(() => {
     const dim = chartDimensions();
     const svgElement = d3.select(ref2.current);
@@ -783,7 +783,7 @@ const ProductsCircles = () => {
 
       }
     
-  }, [filtered2]);
+  }, [filtered2, trackedProducts]);
 
   const ref = useRef();
   const ref2 = useRef();
@@ -981,11 +981,6 @@ const AgeBars = () => {
       .call(d3.axisLeft(yScale));
       
 
-      /**
-      const stacked = d3.stack().keys(["UNKNOWN","MALE","FEMALE","NON-BINARY/OTHER"])(dataRoll);
-      console.log(stacked);
-      */
-      //old way of doing this i honestly think this is lowkey better
       const info = svgElement.select("#rectGroup").selectAll("rect")
       .data(dataRoll, function(d) { return d.body_part; })
       .join(enter => enter.append("rect")
@@ -1115,7 +1110,6 @@ const Response = () => {
       let filt = dataset.filter(function(d) {
         return (d.Age >= ageBr[0] && d.Age <= ageBr[1]) && (d.Sex2 == sex) && (d.Race2 == race) && (d.Diag != "OTHER")
       })
-      console.log("its filt:", filt);
       if (filt.length > 0) {
         setFiltered(filt);
       }
@@ -1186,7 +1180,6 @@ const Response = () => {
         return d.BodyPart == bp;
       });
 
-      console.log(filteredFINAL);
       let rollNarr = d3.rollups(filteredFINAL, v => d3.sum(v, d => d.Weight), d => d.Narrative_1);
       let narr = getRandomString(rollNarr)[0];
       setText1(`You were using`);
