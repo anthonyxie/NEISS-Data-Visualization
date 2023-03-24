@@ -25,8 +25,8 @@ const TimeBars = () => {
   const chartDimensions = () => {
     let dimensions = {
       svgWidth: 1000,
-      svgHeight: 500,
-      margin: {top: 50, left: 100, bottom: 60, right: 250}
+      svgHeight: 450,
+      margin: {top: 20, left: 100, bottom: 60, right: 250}
     };
     dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
     dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
@@ -40,7 +40,7 @@ const TimeBars = () => {
   const [filtered, setFiltered] = useState(null);
 
   useEffect(() => {
-    d3.csv('http://localhost:3000/products10years.csv')
+    d3.csv('/products10years.csv')
       .then((data) => { 
         console.log(data);
         setDataset(data);
@@ -291,7 +291,7 @@ const ProductsCircles = () => {
   const [dataset, setDataset] = useState(null);
   const [filtered, setFiltered] = useState(null);
   const [filtered2, setFiltered2] = useState(null);
-  const [trackedProducts, setTrackedProducts] = useState(["FLOORS OR FLOORING MATERIALS"]);
+  const [trackedProducts, setTrackedProducts] = useState(["FLOORS OR FLOORING MATERIALS", "STAIRS OR STEPS"]);
   const [productRange, setProductRange] = useState(["ALL"]);
   const textRef = useRef(null);
   const rectRef = useRef(null);
@@ -314,7 +314,17 @@ const ProductsCircles = () => {
     let dimensions = {
       svgWidth: 1000,
       svgHeight: 400,
-      margin: {top: 40, left: 60, bottom: 60, right: 250}
+      margin: {top: 40, left: 90, bottom: 60, right: 220}
+    };
+    dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
+    dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
+    return dimensions;
+  }
+  const chartDimensions2 = () => {
+    let dimensions = {
+      svgWidth: 1000,
+      svgHeight: 400,
+      margin: {top: 40, left: 90, bottom: 60, right: 220}
     };
     dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
     dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
@@ -334,16 +344,12 @@ const ProductsCircles = () => {
 
         
   const handleAdd = (product) => {
-    console.log("adding", product);
-    console.log("to", trackedProducts);
     let pList = [...trackedProducts, product]
     console.log(pList);
     setTrackedProducts(pList);
   }
 
   const handleRemove = (product) => {
-    console.log("removing", product);
-    console.log("from", trackedProducts);
     let pList = trackedProducts.filter(a => a !== product);
     if (pList.length > 0) {
       setTrackedProducts(pList);
@@ -360,7 +366,7 @@ const ProductsCircles = () => {
   const dims = chartDimensions();
 
   useEffect(() => {
-    d3.csv('http://localhost:3000/products10years.csv')
+    d3.csv('/products10years.csv')
       .then((data) => {
         setDataset(data);
         let filt = data.filter(function (d) {
@@ -799,6 +805,8 @@ const ProductsCircles = () => {
           <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right + 50}, ${dims.margin.top + 30})`}></g>
+          <text id="yAxisLabel"x={-(dims.margin.top + dims.height / 2)} y={30} transform={`rotate(${-90})`} textAnchor="middle" fontSize={15} >Total Estimated Injury Count</text>
+          <text x={dims.margin.left + dims.width / 2} y={dims.svgHeight - 20} textAnchor="middle" fontSize={15} >Median Age of Injury</text>
           <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`} >          <rect rx="5" fill="white" style={{stroke: 'black'}} ref={rectRef} ></rect> <text id="tooltip-text" fontSize={14} fontWeight="bold" ref={textRef}></text> <text id="tooltip-text2" fontSize={10} fontWeight="bold" ref={textRef2} ></text> <text id="tooltip-text3" fontSize={10} fontWeight="bold" ></text></g>
         </svg>
       </div>
@@ -847,7 +855,9 @@ const ProductsCircles = () => {
           <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-          <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right + 50}, ${dims.margin.top + 30})`}></g>
+          <text id="yAxisLabel"x={-(dims.margin.top + dims.height / 2)} y={30} transform={`rotate(${-90})`} textAnchor="middle" fontSize={15} >Total Estimated Injury Count</text>
+          <text x={dims.margin.left + dims.width / 2} y={dims.svgHeight - 20} textAnchor="middle" fontSize={15} >Year</text>
+          <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right + 20}, ${dims.margin.top + 30})`}></g>
       </svg>
       </div>
       <div style={{width: '50%'}}>
@@ -858,7 +868,9 @@ const ProductsCircles = () => {
           <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-          <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right + 50}, ${dims.margin.top + 30})`}></g>
+          <text id="yAxisLabel"x={-(dims.margin.top + dims.height / 2)} y={50} transform={`rotate(${-90})`} textAnchor="middle" fontSize={15} >Median Age of Injury</text>
+          <text x={dims.margin.left + dims.width / 2} y={dims.svgHeight - 20} textAnchor="middle" fontSize={15} >Year</text>
+          <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right + 30}, ${dims.margin.top + 30})`}></g>
       </svg>
       </div>
       </div>
@@ -867,263 +879,6 @@ const ProductsCircles = () => {
   );
 }
 
-
-
-const Products = () => {
-
-  var productTypes = [ "ALL", "HOUSEHOLD APPLIANCES",  "HOME FIXTURES",  "HOME EQUIPMENT AND CONTAINERS",  "SPORTS AND RECREATIONAL ACTIVITY",  "TOYS",  "INDUSTRIAL, MEDICAL, AND CHILD-CARE EQUIPMENT",  "PERSONAL CARE ITEMS",  "OTHER"];
-  var productTypes2 = [ "HOUSEHOLD APPLIANCES",  "HOME FIXTURES",  "HOME EQUIPMENT AND CONTAINERS",  "SPORTS AND RECREATIONAL ACTIVITY",  "TOYS",  "INDUSTRIAL, MEDICAL, AND CHILD-CARE EQUIPMENT",  "PERSONAL CARE ITEMS",  "OTHER"];
-
-  const [dataset, setDataset] = useState(null);
-  const [filtered, setFiltered] = useState(null);
-  const [productRange, setProductRange] = useState(["ALL"]);
-  const [topN, setTopN] = useState(10);
-
-  const myColor = d3.scaleOrdinal().domain(productTypes2)
-      .range(d3.schemeSet3);
-
-  const chartDimensions = () => {
-    let dimensions = {
-      svgWidth: 1000,
-      svgHeight: 400,
-      margin: {top: 10, left: 100, bottom: 90, right: 50}
-    };
-    dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
-    dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
-    return dimensions;
-  }
-  
-  const handleChange = (event, newValue) => {
-    if (newValue !== topN) {
-      setTopN(newValue);
-    }
-  };
-
-  const handleChange2 = (event) => {
-    console.log(event.target.value);
-    setProductRange(event.target.value);
-  };
-
-  //average age of injury (x-axis) => estimated counts (radius..?) => separated by theme
-  
-  const dims = chartDimensions();
-
-  useEffect(() => {
-    d3.csv('http://localhost:3000/products111.csv')
-      .then((data) => {
-        console.log(data);
-        setDataset(data);
-        let filt = data.filter(function (d) {
-          if (productRange.includes("ALL") || productRange == []) {
-            return true;
-          }
-          else {
-            return productRange.includes(d.Category);
-          }
-        });
-        
-        setFiltered(filt);
-      })
-      .catch((err) => {
-        console.log(err)
-        console.log("csv error");
-        return null;
-    });
-  }, []);
-
-  useEffect(() => {
-    if (dataset) {
-      setFiltered(dataset.filter(function (d) {
-        if (productRange.includes("ALL") || productRange == []) {
-          return true;
-        }
-        else {
-          return productRange.includes(d.Category);
-        }
-      }));
-    }
-  }, [productRange]);
-
-  useEffect(() => {
-    console.log("filter changed");
-    if (filtered) {
-      
-      const dim = chartDimensions();
-      console.log(dim);
-      
-      const svgElement = d3.select(ref.current);
-
-      let dataRoll = d3.rollups(filtered, v => d3.sum(v, d => d.Weight),
-      d => d.Product_Name, d => d.Category);
-      dataRoll = dataRoll.map(([product_name, cat]) => {
-      return {product_name: product_name, count: cat[0][1], category: cat[0][0]}
-    }).sort(function(a, b) {
-      return d3.descending(+a.count, +b.count);
-    });
-
-
-      dataRoll = dataRoll.slice(0,topN);
-
-      var xScale = d3.scaleBand()
-        .domain(dataRoll.map(d => d.product_name))
-        .range([0, dim.width])
-        .padding(0.1);
-      
-      var yScale = d3.scaleLinear()
-        .domain([0,d3.max(dataRoll, d => d.count)])
-        .range([dim.height , 0]);
-      
-      
-
-      
-      //x scale axis
-      svgElement.select("#xAxis")
-      .attr('transform', `translate(${dim.margin.left}, ${dim.height + dim.margin.top})`)
-      .transition()
-      .duration(1000)
-      .ease(d3.easeQuad)
-      .call(d3.axisBottom(xScale))
-      .selectAll("text")
-      .attr("transform", `translate(${0})rotate(-20)`)
-      .style("text-anchor", "end")
-      .style("font-size", "5")
-
-
-
-
-      //y scale axis
-      svgElement.select("#yAxis")
-      .attr('transform', `translate(${dim.margin.left}, ${dim.margin.top})`)
-      .transition()
-      .duration(1000)
-      .ease(d3.easeQuad)
-      .call(d3.axisLeft(yScale));
-
-      var tooltipGroup = svgElement.select("#tooltipGroup")
-      .style("display", "none") // hidden by default
-      .select("#tooltip-text")
-        .style("white-space", "normal")
-        .attr("font-size", "7px")
-        .attr("font-weight", "bold")
-        .attr("fill", "black")
-        .style("text-anchor", "start");
-      var tool = svgElement.select("#tooltipGroup").select("#tooltip-text2")
-        .style("white-space", "normal")
-        .attr("font-size", "10px")
-        .attr("font-weight", "bold")
-        .attr("fill", "white")
-        .style("text-anchor", "start");
-
-
-      //old way of doing this i honestly think this is lowkey better
-      const info = svgElement.select("#rectGroup").selectAll("rect")
-      .data(dataRoll, function(d) { return d.product_name; })
-      .join(enter => enter.append("rect")
-        .attr("x", d => xScale(d.product_name))
-        .attr("y", d => yScale(d.count))
-        .attr("width", xScale.bandwidth())
-        .attr("height", d => dim.height - yScale(d.count))
-        .attr("fill", d => myColor(d.category))
-        .attr("opacity", 0.75)
-        .on("mouseover", function (event, d) {  // <-- need to use the regular function definition to have access to "this"
-          /**
-          svgElement.select("#tooltip-text")
-            .text(`${d.product_name}`);
-          */
-          svgElement.select("#tooltip-text2")
-            .text(`${Math.round(d.count)}`);
-          svgElement.select("#tooltipGroup")
-            // move the tooltip to where the cursor is 
-            .style("display", "block")
-            .select("#tooltip-text")
-            .attr("x", d3.select(this).attr("x"))
-            .attr("y", d3.select(this).attr("y"));
-          svgElement.select("#tooltipGroup")
-            .select("#tooltip-text2")
-              .attr("x", d3.select(this).attr("x"))
-              .attr("y", d3.select("#tooltip-text").attr("y"));  // make tooltip visible
-          d3.select(this)
-            .attr("stroke", "#333333")
-            .attr("stroke-width", 2);
-        })
-        .on("mouseout", function (event, d) {
-          svgElement.select("#tooltipGroup").style("display", "none"); // hide tooltip
-          d3.select(this).attr("stroke", "none");  // undo the stroke
-        }),
-      update => update,
-      exit => exit
-        .transition()
-        .duration(1000)
-        .attr("y", dim.height)
-        .attr("height", 0)
-        .attr("opacity", 0)
-        .remove()
-      );
-    
-      info.transition()
-      .duration(1000)
-      .ease(d3.easeCubic)
-      .attr("x", d => xScale(d.product_name))
-      .attr("y", d => yScale(d.count))
-      .attr("width", xScale.bandwidth())
-      .attr("height", d => dim.height - yScale(d.count))
-      .attr("fill", d => myColor(d.category))
-      .attr("opacity", 0.75);
-
-
-    }
-  }, [filtered, topN]);
-
-  const ref = useRef();
-
-
-  return (
-    <div style={{width:'90%',}}>
-      <svg
-        viewBox={`0 0 ${dims.svgWidth} ${dims.svgHeight}`}
-        ref={ref}
-      >
-        <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-        <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-        <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right - 100}, ${dims.margin.top + 75})`}></g>
-        <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-        <g id="tooltipGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}><text id="tooltip-text"></text><text id="tooltip-text2"></text></g>
-        
-      </svg>
-      <div></div>
-      <div style={{width:'50%',}}>
-      <Slider
-        getAriaLabel={() => 'Show Top:'}
-        value={topN}
-        onChange={handleChange}
-        min={1}
-        max={15}
-        valueLabelDisplay="auto"
-        step={1}
-      />
-      </div>
-      <div  style={{width:'50%',}}>
-      <Box sx={{ minWidth: 120 }}>
-      <FormControl fullWidth>
-        <InputLabel id="demo-simple-select-label">Product Category</InputLabel>
-        <Select
-          multiple
-          labelId="demo-simple-select-label"
-          id="demo-simple-select"
-          value={productRange}
-          label="Product Category"
-          onChange={handleChange2}
-        >
-          {productTypes.map((value, index) => {
-            return (<MenuItem key = {index} value = {value}>{value}</MenuItem>);
-          })}
-        </Select>
-      </FormControl>
-    </Box>
-    </div>
-    </div>
-  );
-}
 
 const AgeBars = () => {
 
@@ -1133,7 +888,7 @@ const AgeBars = () => {
     let dimensions = {
       svgWidth: 1000,
       svgHeight: 400,
-      margin: {top: 50, left: 60, bottom: 60, right: 60}
+      margin: {top: 20, left: 100, bottom: 90, right: 20}
     };
     dimensions.width = dimensions.svgWidth - dimensions.margin.left - dimensions.margin.right;
     dimensions.height = dimensions.svgHeight - dimensions.margin.top - dimensions.margin.bottom;
@@ -1147,7 +902,7 @@ const AgeBars = () => {
   const [filtered, setFiltered] = useState(null);
 
   useEffect(() => {
-    d3.csv('http://localhost:3000/body_parts.csv')
+    d3.csv('/body_parts.csv')
       .then((data) => {
         setDataset(data);
         setFiltered(data);
@@ -1218,7 +973,7 @@ const AgeBars = () => {
       .selectAll("text")
       .attr("transform", `translate(${0})rotate(-20)`)
       .style("text-anchor", "end")
-      .style("font-size", "5")
+      .style("font-size", "7")
       ;
       //y scale axis
       svgElement.select("#yAxis")
@@ -1279,14 +1034,17 @@ const AgeBars = () => {
         <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
         <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
+        <text id="yAxisLabel"x={-(dims.margin.top + dims.height / 2)} y={20} transform={`rotate(${-90})`} textAnchor="middle" fontSize={12} >Total Estimated Injury Count</text>
+        <text x={dims.margin.left + dims.width / 2} y={dims.svgHeight - 35} textAnchor="middle" fontSize={12} >Body Part</text>
         
       </svg>
       <div>
-      <div style={{width: '50%'}}>
+      <div style={{width: '75%', display:'flex', flexDirection:'row'}}>
+        <div>
         <p>Age Range for Injuries:</p>
-      </div>
-      <Slider
-        sx={{width: '50%'}}
+        </div>
+        <Slider
+        sx={{width: '50%', marginLeft: '40px', marginTop: '10px'}}
         getAriaLabel={() => 'Age range'}
         value={ageRange}
         onChange={handleChange}
@@ -1294,7 +1052,9 @@ const AgeBars = () => {
         max={120}
         step={1}
         valueLabelDisplay="on"
-      />
+        />
+      </div>
+
        </div>
     </div>
   );
@@ -1406,16 +1166,16 @@ const Response = () => {
       console.log(filteredFINAL);
       let rollNarr = d3.rollups(filteredFINAL, v => d3.sum(v, d => d.Weight), d => d.Narrative_1);
       let narr = getRandomString(rollNarr)[0];
-      setText1(`Oh no! You were using a`);
-      setProductName(`${product}`);
+      setText1(`You were using`);
+      setProductName(` ${product.replace(/\([^)]*\)?/g, '').trim()}`);
       setProductChance(`(${Math.round(prodChance * 100 * 100) / 100}\% chance)`);
       setText2(`when you suffered a`);
       setDiagnosis(`${diag}`);
-      setDiagnosisChance(`(${Math.round(diagChance * 100 * 100) / 100}\% chance given the selected product)`);
+      setDiagnosisChance(`(${Math.round(diagChance * 100 * 100) / 100}\% chance given product)`);
       setText3(`to your`);
       setBpart(`${bp}`);
-      setBpartChance(`(${Math.round(bpChance * 100 * 100) / 100}\% chance given the selected )`);
-      setText4(`Your injury report`);
+      setBpartChance(`(${Math.round(bpChance * 100 * 100) / 100}\% chance given product and diagnosis)`);
+      setText4(`Your injury report:`);
       setNarrative(`${narr}`);
       setText5(`Around ${Math.round(d3.sum(filteredFINAL, d => d.Weight))} others also experienced this injury this year!`);
 
@@ -1430,7 +1190,7 @@ const Response = () => {
 
 
   useEffect(() => {
-    d3.csv('http://localhost:3000/formatter.csv')
+    d3.csv('/formatter.csv')
       .then((data) => {
         setDataset(data);
       })
@@ -1441,15 +1201,12 @@ const Response = () => {
     });
   }, []);
 
+
   
 
   return (
-    <div style={{width:'90%',}}>
-      <h1>How might I get injured?</h1>
-      <p>Want to figure out what you should stay away from and what might be the most likely injury for you? Tell us a bit about yourself and we'll generate an injury that's likely to occur for you! </p>
-      <br></br>
-      <div></div>
-      <div  style={{width:'100%', display: "flex", flexDirection: 'row'}}>
+    <div style={{width:'90%', display: "flex", flexDirection: 'column', alignContent: 'center'}}>
+      <div  style={{width:'90%', display: "flex", flexDirection: 'row'}}>
       <h3 style={{paddingRight:'10px'}}> I am </h3>
       <Box sx={{ minWidth: 120, maxWidth: 120 }}>
       <FormControl fullWidth>
@@ -1508,20 +1265,42 @@ const Response = () => {
         </Button> 
       </div>    
       </div>
-      <div style={{width: '100%', aspectRatio: 4}}>
+      <div style={{width: '90%',display: 'flex', flexDirection: 'column', alignContent: 'center'}}>
+        <br></br>
+          <div style={{paddingTop: '10px', paddingBottom:'10px' ,borderStyle:'solid', backgroundColor: 'lightgray', borderWidth: '3px'}}>
+          <div style={{width: '100%', display: 'flex', flexDirection: 'row', fontSize: 18, justifyContent: 'center', }}>
+            <p style={{paddingTop:'3px',paddingRight:'10px', marginBlockStart:'0px', marginBlockEnd:'0px', fontFamily:'Monaco'}}>{text1}</p> 
+            <div style={{display: 'flex', flexDirection: 'column'}}>
+            <p style={{paddingRight:'10px', marginBlockStart:'0px', marginBlockEnd:'0px', fontFamily:'Menlo', fontWeight:'bold',fontSize: 26}}>{productName}</p>
+            <p style={{paddingRight:'10px', marginBlockStart:'0px', marginBlockEnd:'0px',fontSize: 15}}>{productChance}</p>
+            </div>
+          </div>
+          <br></br>
+          <div style={{width: '100%', display: 'flex', flexDirection: 'row', fontSize: 18, justifyContent: 'center'}}>
+            <p style={{paddingTop:'3px',paddingRight:'10px', marginBlockStart:'0px', marginBlockEnd:'0px', fontFamily:'Monaco'}}>{text2}</p> 
+            <div style={{display: 'flex', flexDirection: 'column'}}>
+            <p style={{paddingRight:'10px', marginBlockStart:'0px', marginBlockEnd:'0px', fontFamily:'Menlo', fontWeight:'bold',fontSize: 26}}>{diagnosis}</p>
+            <p style={{paddingRight:'10px', marginBlockStart:'0px', marginBlockEnd:'0px',fontSize: 15}}>{diagnosisChance}</p>
+            </div>
+          </div>
+          <br></br>
+          <div style={{width: '100%', display: 'flex', flexDirection: 'row', fontSize: 18, justifyContent: 'center'}}>
+            <p style={{paddingTop:'3px',paddingRight:'10px', marginBlockStart:'0px', marginBlockEnd:'0px', fontFamily:'Monaco'}}>{text3}</p> 
+            <div style={{display: 'flex', flexDirection: 'column'}}>
+            <p style={{paddingRight:'10px', marginBlockStart:'0px', marginBlockEnd:'0px', fontFamily:'Menlo', fontWeight:'bold', fontSize: 26}}>{bpart}</p>
+            <p style={{paddingRight:'10px', marginBlockStart:'0px', marginBlockEnd:'0px',fontSize: 15}}>{bpartChance}</p>
+            </div>
+          </div>
+          </div>
+          <p style={{fontSize: 18, fontFamily:'Monaco'}}>{text5}</p>
+          <div style={{paddingTop: '10px', paddingBottom:'10px' ,borderStyle:'solid', backgroundColor: 'lightgray', borderWidth: '3px', display: 'flex', flexDirection: 'column', alignItems:'center'}}>
+          <div style={{width: '90%'}}>
+          <p style={{fontSize: 18, fontFamily:'Monaco'}}>{text4}</p>
+          <p style={{fontSize: 24, fontFamily:'Monaco'}}>{narrative}</p>
+          </div>
+          </div>
+          <br></br>
           
-          <p>{text1}</p>
-          <p>{productName}</p>
-          <p>{productChance}</p>
-          <p>{text2}</p>
-          <p>{diagnosis}</p>
-          <p>{diagnosisChance}</p>
-          <p>{text3}</p>
-          <p>{bpart}</p>
-          <p>{bpartChance}</p>
-          <p>{text5}</p>
-          <p>{text4}</p>
-          <p>{narrative}</p>
           
       </div>
       
@@ -1549,26 +1328,45 @@ export default function Home() {
         <div style={{width: '90%', flexDirection: 'column', alignItems: 'center', display: "flex"}}>
           <div style={{width: '80%', display: "flex", alignItems: "center", flexDirection: 'column',}}>
             <h1>Consumer Product-Related Injuries in the U.S</h1>
-            
-            
-            <p> Using annual NEISS reports, we investigate how consumer product injuries have changed since 2010. <br></br><br></br>The chart below shows the estimated injury counts for each year, categorized by type of consumer product. You can view the percentage breakdown for each category by clicking the checkbox. <br></br><br></br>Overall, product injuries remained steady year-over-year until experiencing a significant decline in 2019, especially in sports and recreation products, then began to return to previous levels in 2020.</p>
+            <p>The National Electronic Injury Surveillance System (NEISS) dataset is a publicly available database of emergency room visits related to consumer product injuries in the United States. Data has been collected for the past 45 years, with the past 20 years being openly available online. Each dataset consists of around a few hundred thousand injury reports, with each report including information on the type of product involved in the injury, the nature and severity of the injury, and demographic information about the injured person. Exploring this dataset will showcase how consumer product injuries have changed over the years, and how and where these products are causing injury. </p>
+            <br></br><br></br><br></br>
+          <h2 style={{marginBlockStart:'0px', marginBlockEnd:'0px'}}>Product-Related Injuries by Category over the Years</h2>
+          <p> The chart below shows the estimated injury counts for each year, categorized by type of consumer product. You can view the percentage breakdown for each category by clicking the checkbox. Overall, we can see that product injuries remained steady year-over-year until experiencing a significant decline in 2020, most likely as a result of the COVID-19 lockdown, then began to return to previous levels in 2021. When we view the percentage breakdown, we can see that most categories followed the same trend of staying steady year-over-year. However, in 2020, two categories saw fairly large deviations in their injury counts -- sports and recreation went from 26.42% in 2019 to 22.02% in 2020, whereas household fixtures went from 51.48% in 2019 to 53.52%. All other categories saw a less than 1% deviation from the previous year.</p>
           </div>
-          <h2>Injuries by Product Type</h2>
+
+          
         <TimeBars></TimeBars>
         <br></br><br></br><br></br><br></br>
         
 
-        <br></br><br></br><br></br><br></br>
+        <div style={{width: '80%', display: "flex", alignItems: "center", flexDirection: 'column',}}>
+        <h2 style={{marginBlockStart:'0px', marginBlockEnd:'0px'}}>Injury Counts and Median Injury Age of Products</h2>
+        <p>Let's examine the individual consumer products that are causing injury. Here, we have a plot of every single product with over 10000 estimated injuries, showing the median age of individuals injured by that product alongside the estimate with their estimated injury count. Let's examine the two highest injury count products in 2021, "Floors or flooring materials" and "Stairs or steps", which are highlighted with thicker borders. We can look at the two line graphs at the bottom to see how the injury counts and the median age of injury has changed over the past 10 years -- originally, stairs and steps caused more injuries, but has decreased steadily over time, whereas flooring materials' injury count has increased over the past 10 years. Change the category and the year on the menus on the side to isolate certain product types and see the spread across the years, and click on individual points to view their overall trends!</p>
+        </div>
+        <div style={{width: '90%', display: "flex", alignItems: "center", flexDirection: 'column',}}>
+          <ProductsCircles />
+        </div>
         
-        <h2>Injury Counts and Median Injury Age of Products</h2>
-        <p>Let's examine the individual consumer products that are causing injury. Here, we have a plot of every single product with over 10000 estimated injuries with their estimated injury count, plotted against the median age of individuals injured by said product. If we look at the highest injury count </p>
-        <ProductsCircles />
         <br></br><br></br><br></br><br></br>
-        <h2>Injuries by Age and Body Location</h2>
-        <p>People age 20-45 are most frequently admitted for finger injuries, but other age groups tend to sustain injuries to the head. Elderly people are especially susceptible to injuries of the head and lower trunk.</p>
+        <div style={{width: '80%', display: "flex", alignItems: "center", flexDirection: 'column',}}>
+        <h2 style={{marginBlockStart:'0px', marginBlockEnd:'0px'}}>Injuries by Age and Body Location</h2>
+        <p>Here we've charted the distribution of the body parts which most often sustain injuries. We can also adjust the age range for the data, to see if people of certain ages are more susceptible to injuring certain body parts. Across all ages, we can see that head injuries are the most common, which stays consistent across most age ranges. However, if we change the range to people age 20-45, we can see that they are more frequently admitted for finger injuries, and for children aged 1-7, we can see that they are more often admitted for facial injuries, whereas it as only 4th most common when considering all age groups.</p>
+        </div>
         <AgeBars />
         <br></br><br></br><br></br><br></br>
+        <div style={{width: '80%', display: "flex", alignItems: "center", flexDirection: 'column',}}>
+        <h2 style={{marginBlockStart:'0px', marginBlockEnd:'0px'}}>How might I get injured?</h2>
+        <p>Want to figure out what you should stay away from and what might be the most likely injury for you? Tell us a bit about yourself and we'll generate an injury that's likely to occur for you! This is done by randomly sampling from individuals in the same demographic as you, starting by sampling the product, then the diagnosis, then the body part. The probability of each event occurring is provided. </p>
+        <br></br>
+        </div>
         <Response></Response>
+        <div style={{width: '80%', display: "flex", alignItems: "center", flexDirection: 'column',}}>
+        <h2 >References</h2>
+        <p style={{marginBlockStart:'2px', marginBlockEnd:'2px'}}>The main chunks of this website were built using <a href="https://react.dev">React</a> and hosted using <a href="https://nextjs.org">Next.js</a>. </p>
+        <p style={{marginBlockStart:'2px', marginBlockEnd:'2px'}}>All charts were built using <a href="https://d3js.org">D3</a> </p>
+        <p style={{marginBlockStart:'2px', marginBlockEnd:'2px'}}>Data sourced from the <a href="https://www.cpsc.gov/cgibin/NEISSQuery/home.aspx">NEISS website</a>, and cleaned/preprocessed using a combination of Excel, Tableau, and R</p>
+        </div>
+        <br></br>
         </div>
       </main>
       <style jsx>{`
