@@ -1121,11 +1121,31 @@ const Response = () => {
       }
       else {
         setText1("Unfortunately we don't have enough data for this demographic!");
+        setText2("");
+        setText3("");
+        setText4("");
+        setText5("");
+        setBpart("");
+        setBpartChance("");
+        setProductName("");
+        setProductChance("");
+        setDiagnosis("");
+        setDiagnosisChance("");
       }
       
     }
     else {
       setText1("Please submit your information properly!");
+      setText2("");
+      setText3("");
+      setText4("");
+      setText5("");
+      setBpart("");
+      setBpartChance("");
+      setProductName("");
+      setProductChance("");
+      setDiagnosis("");
+      setDiagnosisChance("");
     }
   }
   
