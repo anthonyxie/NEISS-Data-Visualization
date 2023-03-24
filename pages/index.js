@@ -1333,6 +1333,7 @@ const Response = () => {
   const [bpartChance, setBpartChance] = useState("");
   const [text4, setText4] = useState("");
   const [narrative, setNarrative] = useState("");
+  const [text5, setText5] = useState("");
 
 
 
@@ -1403,19 +1404,20 @@ const Response = () => {
       });
 
       console.log(filteredFINAL);
-      let rollNarr = d3.rollups(filtered3, v => d3.sum(v, d => d.Weight), d => d.Narrative_1);
+      let rollNarr = d3.rollups(filteredFINAL, v => d3.sum(v, d => d.Weight), d => d.Narrative_1);
       let narr = getRandomString(rollNarr)[0];
       setText1(`Oh no! You were using a`);
       setProductName(`${product}`);
       setProductChance(`(${Math.round(prodChance * 100 * 100) / 100}\% chance)`);
       setText2(`when you suffered a`);
       setDiagnosis(`${diag}`);
-      setDiagnosisChance(`(${Math.round(diagChance * 100 * 100) / 100}\% chance)`);
+      setDiagnosisChance(`(${Math.round(diagChance * 100 * 100) / 100}\% chance given the selected product)`);
       setText3(`to your`);
       setBpart(`${bp}`);
-      setBpartChance(`(${Math.round(bpChance * 100 * 100) / 100}\% chance)`);
+      setBpartChance(`(${Math.round(bpChance * 100 * 100) / 100}\% chance given the selected )`);
       setText4(`Your injury report`);
       setNarrative(`${narr}`);
+      setText5(`Around ${Math.round(d3.sum(filteredFINAL, d => d.Weight))} others also experienced this injury this year!`);
 
 
 
@@ -1517,8 +1519,10 @@ const Response = () => {
           <p>{text3}</p>
           <p>{bpart}</p>
           <p>{bpartChance}</p>
+          <p>{text5}</p>
           <p>{text4}</p>
           <p>{narrative}</p>
+          
       </div>
       
       
