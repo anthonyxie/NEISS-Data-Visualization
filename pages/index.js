@@ -852,8 +852,8 @@ const ProductsCircles = () => {
           <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-          <text id="yAxisLabel"x={-(dims.margin.top + dims.height / 2)} y={30} transform={`rotate(${-90})`} textAnchor="middle" fontSize={15} >Total Estimated Injury Count</text>
-          <text x={dims.margin.left + dims.width / 2} y={dims.svgHeight - 20} textAnchor="middle" fontSize={15} >Year</text>
+          <text id="yAxisLabel"x={-(dims.margin.top + dims.height / 2)} y={30} transform={`rotate(${-90})`} textAnchor="middle" fontSize={20} fontWeight="bold" >Total Estimated Injury Count</text>
+          <text x={dims.margin.left + dims.width / 2} y={dims.svgHeight - 20} textAnchor="middle" fontSize={20} fontWeight="bold" >Year</text>
           <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right + 20}, ${dims.margin.top + 30})`}></g>
       </svg>
       </div>
@@ -865,8 +865,8 @@ const ProductsCircles = () => {
           <g id="xAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="yAxis" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
           <g id="rectGroup" transform={`translate(${dims.margin.left}, ${dims.margin.top})`}></g>
-          <text id="yAxisLabel"x={-(dims.margin.top + dims.height / 2)} y={50} transform={`rotate(${-90})`} textAnchor="middle" fontSize={15} >Median Age of Injury</text>
-          <text x={dims.margin.left + dims.width / 2} y={dims.svgHeight - 20} textAnchor="middle" fontSize={15} >Year</text>
+          <text id="yAxisLabel"x={-(dims.margin.top + dims.height / 2)} y={50} transform={`rotate(${-90})`} textAnchor="middle" fontSize={20} fontWeight="bold" >Median Age of Injury</text>
+          <text x={dims.margin.left + dims.width / 2} y={dims.svgHeight - 20} textAnchor="middle" fontSize={20} fontWeight="bold" >Year</text>
           <g id="legend" transform={`translate(${dims.svgWidth - dims.margin.right + 30}, ${dims.margin.top + 30})`}></g>
       </svg>
       </div>
