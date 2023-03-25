@@ -1380,7 +1380,7 @@ export default function Home() {
         <h2 >References</h2>
         <p style={{marginBlockStart:'2px', marginBlockEnd:'2px'}}>The main chunks of this website were built using <a href="https://react.dev">React</a> and hosted using <a href="https://nextjs.org">Next.js</a>. </p>
         <p style={{marginBlockStart:'2px', marginBlockEnd:'2px'}}>All charts were built using <a href="https://d3js.org">D3</a> </p>
-        <p style={{marginBlockStart:'2px', marginBlockEnd:'2px'}}>Data sourced from the <a href="https://www.cpsc.gov/cgibin/NEISSQuery/home.aspx">NEISS website</a>, and cleaned/preprocessed using a combination of Excel, Tableau, and R</p>
+        <p style={{marginBlockStart:'2px', marginBlockEnd:'2px'}}>Data sourced from the <a href="https://www.cpsc.gov/cgibin/NEISSQuery/home.aspx">NEISS website</a>, and cleaned/preprocessed using a combination of Excel, Tableau, and R. Excel and R used to convert table values to associated product names/diagnoses/body parts, Tableau used to reduce data size by grouping. </p>
         </div>
         <br></br>
         </div>
